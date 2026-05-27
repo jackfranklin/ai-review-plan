@@ -1,8 +1,9 @@
 # review-plan
 
-When an AI agent is about to execute a plan, `review-plan` pauses it, opens
-the plan in your browser, and lets you annotate it line by line. Your comments
-are returned to the agent so it can revise before acting.
+Reviewing an AI-generated plan in the terminal means reading a wall of text and
+typing feedback into the chat. `review-plan` opens the plan in your browser so
+you can annotate specific lines inline. Your comments are returned to the agent
+so it can revise before acting.
 
 ---
 
@@ -20,12 +21,25 @@ npx review-plan plan.md
 
 ---
 
-## Use with Claude Code (recommended)
+## How it works
 
-The easiest way to use `review-plan` is via a Claude Code skill that triggers
-automatically when Claude is about to execute a multi-step plan.
+```
+agent writes plan → review-plan opens browser → you annotate → agent revises → agent acts
+```
 
-Copy the template below to `~/.claude/skills/review-plan.md`:
+The CLI starts a local server, opens the browser, and blocks until you click
+**Done**. Any comments you left are printed to stdout and returned to the agent
+as context for revision. If you click Done with no comments, nothing is printed
+and the agent proceeds as planned.
+
+---
+
+## Use with Claude Code
+
+The skill below tells Claude to pause before executing any multi-step plan and
+call `review-plan` automatically.
+
+Copy it to `~/.claude/skills/review-plan.md`:
 
 ````markdown
 ---
@@ -67,6 +81,9 @@ Then ask Claude: **"use /review-plan before you start"** — or invoke it direct
 
 ## Use from the command line
 
+`review-plan` is also useful on its own, independently of any AI agent — for
+reviewing a plan written by hand, or for integrating into your own tooling.
+
 ```bash
 # Review a file
 review-plan plan.md
@@ -77,20 +94,22 @@ echo "$PLAN" | review-plan
 # With a title (useful when reviewing multiple plans at once)
 review-plan --title "Auth refactor" plan.md
 
-# Light theme
+# Light or dark theme
 review-plan --theme light plan.md
+review-plan --theme dark plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.
 Annotate the plan, then click **Done** (or press `Ctrl+D`). The CLI prints the
-annotated result to stdout and exits. If you click Done with no comments,
-nothing is printed.
+annotated result to stdout and exits.
 
 Press **?** in the UI to see all keyboard shortcuts.
 
 ---
 
 ## Output format
+
+When you leave comments, the CLI prints:
 
 ```markdown
 <!-- review-plan output -->
@@ -110,6 +129,9 @@ Press **?** in the UI to see all keyboard shortcuts.
 | 2 | This step is too vague — specify which database. |
 | 8–11 | This whole block conflicts with the caching approach in step 4. |
 ```
+
+The interleaved format gives spatial context; the summary table gives the agent
+a quick structured view to work from. Both are always present.
 
 ---
 
