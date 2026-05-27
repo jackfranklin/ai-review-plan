@@ -19,38 +19,50 @@ export class RpApp extends LitElement {
       bottom: 0;
       left: 0;
       right: 0;
-      background: #252526;
-      border-top: 1px solid #333;
+      background: var(--toolbar-bg);
+      border-top: 1px solid var(--toolbar-border);
       padding: 0.6rem 1rem;
       display: flex;
-      justify-content: flex-end;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .status {
+      color: var(--text-muted);
+      font-size: 0.85em;
+      margin-right: auto;
+    }
+    select {
+      font: inherit;
+      font-size: 0.85em;
+      background: var(--bg-elevated);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      padding: 0.2rem 0.5rem;
+      cursor: pointer;
     }
     button.done {
       font: inherit;
       font-size: 0.9em;
       padding: 0.4rem 1.2rem;
-      background: #0e639c;
-      color: #fff;
+      background: var(--accent);
+      color: var(--accent-text);
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
-    button.done:hover { background: #1177bb; }
-    .status {
-      color: #888;
-      font-size: 0.85em;
-      align-self: center;
-      margin-right: auto;
-    }
+    button.done:hover { background: var(--accent-hover); }
   `;
 
   @state() private blocks: Block[] = [];
   @state() private comments: Comment[] = [];
   @state() private focusedLine = 1;
   @state() private openCommentLine: number | null = null;
+  @state() private theme = "dark";
 
   override connectedCallback(): void {
     super.connectedCallback();
+    this._applyTheme(localStorage.getItem("review-plan:theme") ?? "dark");
     void this._fetchPlan();
     window.addEventListener("keydown", this._onKeydown);
   }
@@ -58,6 +70,12 @@ export class RpApp extends LitElement {
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener("keydown", this._onKeydown);
+  }
+
+  private _applyTheme(name: string): void {
+    this.theme = name;
+    document.documentElement.dataset.theme = name;
+    localStorage.setItem("review-plan:theme", name);
   }
 
   private async _fetchPlan(): Promise<void> {
@@ -207,6 +225,13 @@ export class RpApp extends LitElement {
             ? "No comments yet"
             : `${this.comments.length} comment${this.comments.length === 1 ? "" : "s"}`}</span
         >
+        <select
+          .value=${this.theme}
+          @change=${(e: Event) => { this._applyTheme((e.target as HTMLSelectElement).value); }}
+        >
+          <option value="dark">Dark</option>
+          <option value="light">Light</option>
+        </select>
         <button class="done" @click=${this._submit}>Done reviewing (Ctrl+D)</button>
       </div>
     `;

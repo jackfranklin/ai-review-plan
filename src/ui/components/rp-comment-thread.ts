@@ -11,8 +11,8 @@ export class RpCommentThread extends LitElement {
     .thread {
       margin: 0.25rem 0 0.25rem 2rem;
       padding: 0.4rem 0.6rem;
-      border-left: 3px solid #555;
-      background: #252526;
+      border-left: 3px solid var(--comment-border);
+      background: var(--comment-bg);
       border-radius: 0 3px 3px 0;
       display: flex;
       justify-content: space-between;
@@ -22,7 +22,7 @@ export class RpCommentThread extends LitElement {
     .text {
       flex: 1;
       white-space: pre-wrap;
-      color: #ccc;
+      color: var(--comment-text);
     }
     .actions {
       display: flex;
@@ -35,11 +35,11 @@ export class RpCommentThread extends LitElement {
       padding: 0.1rem 0.5rem;
       border-radius: 3px;
       cursor: pointer;
-      border: 1px solid #555;
+      border: 1px solid var(--border);
       background: transparent;
-      color: #888;
+      color: var(--text-muted);
     }
-    button:hover { color: #ccc; border-color: #888; }
+    button:hover { color: var(--text); border-color: var(--text-muted); }
   `;
 
   @property({ attribute: false }) comment!: Comment;

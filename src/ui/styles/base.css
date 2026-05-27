@@ -5,9 +5,108 @@
 html, body {
   margin: 0;
   padding: 0;
-  background: #1e1e1e;
-  color: #d4d4d4;
+  background: var(--bg);
+  color: var(--text);
   font-family: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, Consolas, monospace;
   font-size: 14px;
   line-height: 1.6;
+}
+
+/* ── Default theme (dark) ─────────────────────────────────────────────────── */
+:root,
+[data-theme="dark"] {
+  /* Surfaces */
+  --bg:           #141414;
+  --bg-raised:    #1f1f1f;
+  --bg-elevated:  #2a2a2a;
+  --bg-focused:   #252525;
+
+  /* Text */
+  --text:         #e8e8e8;
+  --text-muted:   #aaa;
+  --text-subtle:  #707070;
+
+  /* Borders */
+  --border:       #3a3a3a;
+  --border-muted: #2e2e2e;
+
+  /* Accent (buttons, highlights) */
+  --accent:       #1a7ec8;
+  --accent-hover: #2490d8;
+  --accent-text:  #fff;
+
+  /* Links */
+  --link:         #4ec9b0;
+
+  /* Gutter */
+  --gutter-text:  #606060;
+  --gutter-plus:  #909090;
+
+  /* Comments */
+  --comment-border: #4a4a4a;
+  --comment-bg:     #1f1f1f;
+  --comment-text:   #e0e0e0;
+
+  /* Code */
+  --code-bg:      #1a1a1a;
+  --code-border:  #333;
+
+  /* Headings */
+  --heading:      #ffffff;
+  --heading-rule: #333;
+
+  /* Blockquote */
+  --bq-border:    #505050;
+  --bq-text:      #c0c0c0;
+
+  /* Table */
+  --table-border: #3a3a3a;
+  --table-header-bg: #252525;
+
+  /* Toolbar */
+  --toolbar-bg:   #1a1a1a;
+  --toolbar-border: #333;
+}
+
+/* ── Light theme ──────────────────────────────────────────────────────────── */
+[data-theme="light"] {
+  --bg:           #ffffff;
+  --bg-raised:    #f5f5f5;
+  --bg-elevated:  #ebebeb;
+  --bg-focused:   #e8e8e8;
+
+  --text:         #1a1a1a;
+  --text-muted:   #555;
+  --text-subtle:  #999;
+
+  --border:       #ccc;
+  --border-muted: #e0e0e0;
+
+  --accent:       #0969da;
+  --accent-hover: #0550ae;
+  --accent-text:  #fff;
+
+  --link:         #0969da;
+
+  --gutter-text:  #999;
+  --gutter-plus:  #555;
+
+  --comment-border: #0969da;
+  --comment-bg:     #f0f6ff;
+  --comment-text:   #1a1a1a;
+
+  --code-bg:      #f6f8fa;
+  --code-border:  #d0d0d0;
+
+  --heading:      #0a0a0a;
+  --heading-rule: #d0d0d0;
+
+  --bq-border:    #aaa;
+  --bq-text:      #555;
+
+  --table-border:     #ccc;
+  --table-header-bg:  #f0f0f0;
+
+  --toolbar-bg:     #f5f5f5;
+  --toolbar-border: #ddd;
 }

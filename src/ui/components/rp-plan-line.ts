@@ -22,14 +22,14 @@ export class RpPlanLine extends LitElement {
       align-items: flex-start;
     }
     .line-wrap.focused {
-      background: #2a2d2e;
+      background: var(--bg-focused);
     }
     .gutter {
       width: 4rem;
       flex-shrink: 0;
       text-align: right;
       padding-right: 0.75rem;
-      color: #555;
+      color: var(--gutter-text);
       font-size: 0.8em;
       line-height: 1.6;
       user-select: none;
@@ -41,7 +41,7 @@ export class RpPlanLine extends LitElement {
     }
     .plus {
       opacity: 0;
-      color: #888;
+      color: var(--gutter-plus);
       transition: opacity 0.1s;
     }
     .content {
@@ -52,27 +52,28 @@ export class RpPlanLine extends LitElement {
     .content > * {
       margin: 0;
     }
-    /* prose styles inside shadow DOM */
     .content h1, .content h2, .content h3,
     .content h4, .content h5, .content h6 {
-      color: #e0e0e0;
+      color: var(--heading);
       margin: 0.8em 0 0.2em;
       line-height: 1.3;
     }
-    .content h1 { font-size: 1.4em; border-bottom: 1px solid #333; padding-bottom: 0.2em; }
+    .content h1 { font-size: 1.4em; border-bottom: 1px solid var(--heading-rule); padding-bottom: 0.2em; }
     .content h2 { font-size: 1.2em; }
     .content h3 { font-size: 1.05em; }
     .content p { margin: 0.2em 0; }
     .content ul, .content ol { margin: 0.2em 0; padding-left: 1.4em; }
     .content li { margin: 0.1em 0; }
     .content code {
-      background: #2d2d2d;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
       padding: 0.1em 0.3em;
       border-radius: 3px;
       font-size: 0.9em;
     }
     .content pre {
-      background: #2d2d2d;
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
       padding: 0.7em 1em;
       border-radius: 4px;
       overflow-x: auto;
@@ -80,13 +81,14 @@ export class RpPlanLine extends LitElement {
     }
     .content pre code {
       background: none;
+      border: none;
       padding: 0;
     }
     .content blockquote {
-      border-left: 3px solid #555;
-      margin: 0.3em 0 0.3em 0;
+      border-left: 3px solid var(--bq-border);
+      margin: 0.3em 0;
       padding-left: 0.8em;
-      color: #aaa;
+      color: var(--bq-text);
     }
     .content table {
       border-collapse: collapse;
@@ -94,12 +96,12 @@ export class RpPlanLine extends LitElement {
       margin: 0.3em 0;
     }
     .content th, .content td {
-      border: 1px solid #444;
+      border: 1px solid var(--table-border);
       padding: 0.3em 0.6em;
     }
-    .content th { background: #2d2d2d; }
-    .content a { color: #4ec9b0; }
-    .content hr { border: none; border-top: 1px solid #333; margin: 0.5em 0; }
+    .content th { background: var(--table-header-bg); }
+    .content a { color: var(--link); }
+    .content hr { border: none; border-top: 1px solid var(--border-muted); margin: 0.5em 0; }
   `;
 
   @property({ attribute: false }) block!: Block;

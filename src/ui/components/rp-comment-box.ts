@@ -12,15 +12,15 @@ export class RpCommentBox extends LitElement {
       flex-direction: column;
       gap: 0.4rem;
       padding: 0.5rem;
-      background: #2d2d2d;
-      border: 1px solid #444;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
       border-radius: 4px;
       margin: 0.25rem 0 0.25rem 2rem;
     }
     textarea {
-      background: #1e1e1e;
-      color: #d4d4d4;
-      border: 1px solid #555;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 3px;
       padding: 0.4rem;
       font: inherit;
@@ -29,7 +29,7 @@ export class RpCommentBox extends LitElement {
       outline: none;
     }
     textarea:focus {
-      border-color: #888;
+      border-color: var(--text-muted);
     }
     .actions {
       display: flex;
@@ -41,17 +41,17 @@ export class RpCommentBox extends LitElement {
       padding: 0.2rem 0.7rem;
       border-radius: 3px;
       cursor: pointer;
-      border: 1px solid #555;
-      background: #333;
-      color: #d4d4d4;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text);
     }
     button.save {
-      background: #0e639c;
-      border-color: #0e639c;
-      color: #fff;
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--accent-text);
     }
-    button.save:hover { background: #1177bb; }
-    button.cancel:hover { background: #444; }
+    button.save:hover { background: var(--accent-hover); }
+    button.cancel:hover { background: var(--bg-focused); }
   `;
 
   @property({ type: Number }) startLine = 0;

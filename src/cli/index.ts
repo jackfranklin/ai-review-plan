@@ -7,8 +7,24 @@ import getPort from "get-port";
 import open from "open";
 import { UI_HTML } from "./ui-html.js";
 
+const DEFAULT_PORT = 7777;
+
+function parseArgs(): { file: string | null; port: number } {
+  const args = process.argv.slice(2);
+  let file: string | null = null;
+  let port = DEFAULT_PORT;
+  for (let i = 0; i < args.length; i++) {
+    if ((args[i] === "--port" || args[i] === "-p") && args[i + 1]) {
+      port = parseInt(args[++i], 10);
+    } else if (!args[i].startsWith("-")) {
+      file = args[i];
+    }
+  }
+  return { file, port };
+}
+
 async function run(): Promise<void> {
-  const fileArg = process.argv[2];
+  const { file: fileArg, port: preferredPort } = parseArgs();
 
   let planPath: string;
   let tmpFile: string | null = null;
@@ -26,7 +42,7 @@ async function run(): Promise<void> {
     planPath = tmpFile;
   }
 
-  const port = await getPort();
+  const port = await getPort({ port: preferredPort });
 
   const uiHtml =
     UI_HTML ??
