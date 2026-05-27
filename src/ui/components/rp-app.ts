@@ -71,32 +71,59 @@ export class RpApp extends LitElement {
   @state() private theme = "dark";
   @state() private planTitle = "";
 
+  private get _storageKey(): string {
+    return `review-plan:comments:${window.location.port}`;
+  }
+
   override connectedCallback(): void {
     super.connectedCallback();
-    this._applyTheme(localStorage.getItem("review-plan:theme") ?? "dark");
     void this._fetchPlan();
     window.addEventListener("keydown", this._onKeydown);
+    window.addEventListener("beforeunload", this._onBeforeUnload);
   }
 
   override disconnectedCallback(): void {
     super.disconnectedCallback();
     window.removeEventListener("keydown", this._onKeydown);
+    window.removeEventListener("beforeunload", this._onBeforeUnload);
   }
+
+  override updated(changed: Map<PropertyKey, unknown>): void {
+    if (changed.has("comments")) {
+      if (this.comments.length > 0) {
+        localStorage.setItem(this._storageKey, JSON.stringify(this.comments));
+      } else {
+        localStorage.removeItem(this._storageKey);
+      }
+    }
+  }
+
+  private readonly _onBeforeUnload = (e: BeforeUnloadEvent): void => {
+    if (this.comments.length > 0) {
+      e.preventDefault();
+    }
+  };
 
   private _applyTheme(name: string): void {
     this.theme = name;
     document.documentElement.dataset.theme = name;
-    localStorage.setItem("review-plan:theme", name);
   }
 
   private async _fetchPlan(): Promise<void> {
     const res = await fetch("/plan");
-    const data = (await res.json()) as { markdown: string; title?: string };
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string };
     this.blocks = groupBlocks(data.markdown);
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
     if (data.title) {
       this.planTitle = data.title;
       document.title = `review-plan: ${data.title}`;
+    }
+    this._applyTheme(data.theme ?? "dark");
+    const saved = localStorage.getItem(this._storageKey);
+    if (saved) {
+      try {
+        this.comments = JSON.parse(saved) as Comment[];
+      } catch { /* ignore corrupted data */ }
     }
   }
 
@@ -197,6 +224,7 @@ export class RpApp extends LitElement {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ comments: this.comments }),
     });
+    localStorage.removeItem(this._storageKey);
     document.body.innerHTML =
       "<p style='padding:2rem;color:#888'>Done! You can close this tab.</p>";
   }

@@ -25,12 +25,18 @@ async function run(): Promise<void> {
       default: "",
       describe: "Title shown in the review UI",
     })
+    .option("theme", {
+      choices: ["dark", "light"] as const,
+      default: "dark" as const,
+      describe: "Initial colour theme for the review UI",
+    })
     .help()
     .parseAsync();
 
   const fileArg = argv._[0] as string | undefined;
   const preferredPort = argv.port;
   const title = argv.title;
+  const theme = argv.theme;
 
   let planPath: string;
   let tmpFile: string | null = null;
@@ -54,7 +60,7 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title);
+  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme);
   server.listen(port);
 
   const url = `http://localhost:${port}`;
