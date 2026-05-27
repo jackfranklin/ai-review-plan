@@ -84,8 +84,7 @@ npm run dev
 npm run build
 
 # Type-check everything
-npx tsc -p tsconfig.cli.json --noEmit
-npx tsc -p tsconfig.ui.json --noEmit
+npm run typecheck
 ```
 
 ---
@@ -119,6 +118,37 @@ scripts/
 
 ## Claude Code skill
 
-A skill file is installed at `~/.claude/skills/review-plan.md`. When you ask
-Claude to present a plan for review, it will run `review-plan`, wait for you
-to annotate it, then revise the plan addressing each comment.
+Copy the template below to `~/.claude/skills/review-plan.md` to give Claude a
+`/review-plan` skill. When invoked, Claude will write the current plan to a
+temp file, open it in the review UI, wait for your annotations, then revise
+the plan addressing each comment.
+
+```markdown
+---
+name: review-plan
+description: >
+  Present a plan to the user for inline annotation via the review-plan UI.
+  Use when you have a plan ready for human review before executing it.
+  The user will annotate it in the browser; you then revise based on their comments.
+---
+
+You are presenting a plan for human review using the review-plan CLI.
+
+## Steps
+
+1. Write the plan to a temporary file (e.g. `/tmp/plan-<timestamp>.md`).
+2. Run the CLI, passing a short title so the user knows which review tab is which:
+   ```
+   review-plan --title "<short description of what is being planned>" /tmp/plan-<timestamp>.md
+   ```
+3. Wait for the CLI to exit. It blocks until the user clicks Done.
+4. If the CLI prints nothing to stdout, the user had no comments — proceed with the plan as-is.
+5. If the CLI prints annotated output, read each comment carefully and revise the plan to address it. Show the revised plan to the user before proceeding.
+6. Delete the temporary file.
+
+## Notes
+
+- Pass `--theme light` if the user prefers a light UI.
+- Do not proceed with execution until after review is complete.
+- If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
+```
