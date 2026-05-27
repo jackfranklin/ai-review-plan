@@ -41,10 +41,13 @@ You are presenting a plan for human review using the review-plan CLI.
 ## Steps
 
 1. Write the plan to a temporary file (e.g. `/tmp/plan-<timestamp>.md`).
-2. Run the CLI, passing a short title so the user knows which review tab is which:
+2. Run the CLI with a title and theme. Choose a title that is short (3–6 words)
+   and specific to the current task — the user may have multiple review tabs open
+   at once and needs to tell them apart at a glance:
    ```
-   review-plan --title "<short description of what is being planned>" /tmp/plan-<timestamp>.md
+   review-plan --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
    ```
+   Use `--theme light` unless the user has expressed a preference for dark mode.
 3. Wait for the CLI to exit. It blocks until the user clicks Done.
 4. If the CLI prints nothing to stdout, the user had no comments — proceed with the plan as-is.
 5. If the CLI prints annotated output, read each comment carefully and revise the plan to address it. Show the revised plan to the user before proceeding.
@@ -52,7 +55,8 @@ You are presenting a plan for human review using the review-plan CLI.
 
 ## Notes
 
-- Pass `--theme light` if the user prefers a light UI.
+- Always pass `--title`. Derive it from the current conversation (e.g. "Auth middleware refactor", "Add dark mode", "DB migration plan") — never use a generic title like "Plan review".
+- Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
 - Do not proceed with execution until after review is complete.
 - If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
 ````
