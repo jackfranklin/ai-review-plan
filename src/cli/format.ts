@@ -1,0 +1,42 @@
+import type { Comment } from "../server/server.js";
+
+export function formatOutput(content: string, comments: Comment[]): string {
+  const lines = content.split("\n");
+
+  const commentsByLine = new Map<number, Comment[]>();
+  for (const c of comments) {
+    const existing = commentsByLine.get(c.startLine) ?? [];
+    existing.push(c);
+    commentsByLine.set(c.startLine, existing);
+  }
+
+  const annotated: string[] = ["<!-- review-plan output -->", "", "## Annotated Plan", ""];
+
+  for (let i = 0; i < lines.length; i++) {
+    const lineNum = i + 1;
+    annotated.push(lines[i]);
+    const lineComments = commentsByLine.get(lineNum);
+    if (lineComments) {
+      for (const c of lineComments) {
+        const label =
+          c.startLine === c.endLine
+            ? `line ${c.startLine}`
+            : `lines ${c.startLine}–${c.endLine}`;
+        annotated.push(`> **Comment (${label}):** ${c.text}`);
+      }
+    }
+  }
+
+  annotated.push("", "## Comment Summary", "");
+  annotated.push("| Lines | Comment |");
+  annotated.push("|-------|---------|");
+
+  const sorted = [...comments].sort((a, b) => a.startLine - b.startLine);
+  for (const c of sorted) {
+    const label =
+      c.startLine === c.endLine ? `${c.startLine}` : `${c.startLine}–${c.endLine}`;
+    annotated.push(`| ${label} | ${c.text} |`);
+  }
+
+  return annotated.join("\n") + "\n";
+}
