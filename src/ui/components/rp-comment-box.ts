@@ -15,7 +15,7 @@ export class RpCommentBox extends LitElement {
       background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: 4px;
-      margin: 0.25rem 0 0.25rem 2rem;
+      margin: 0.4rem 0;
     }
     textarea {
       background: var(--bg);

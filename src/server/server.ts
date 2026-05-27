@@ -9,7 +9,8 @@ export interface Comment {
 
 export function createServer(
   planPath: string,
-  uiHtml: string
+  uiHtml: string,
+  title = ""
 ): { server: http.Server; waitForSubmit: () => Promise<Comment[]> } {
   let resolveSubmit!: (comments: Comment[]) => void;
   const submitPromise = new Promise<Comment[]>((resolve) => {
@@ -26,7 +27,7 @@ export function createServer(
     if (req.method === "GET" && req.url === "/plan") {
       const markdown = fs.readFileSync(planPath, "utf-8");
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ markdown }));
+      res.end(JSON.stringify({ markdown, title }));
       return;
     }
 

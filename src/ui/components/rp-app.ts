@@ -26,6 +26,16 @@ export class RpApp extends LitElement {
       align-items: center;
       gap: 0.75rem;
     }
+    .title {
+      font-size: 0.9em;
+      font-weight: 600;
+      color: var(--text);
+    }
+    .title::after {
+      content: "·";
+      margin: 0 0.5rem;
+      color: var(--text-subtle);
+    }
     .status {
       color: var(--text-muted);
       font-size: 0.85em;
@@ -59,6 +69,7 @@ export class RpApp extends LitElement {
   @state() private focusedLine = 1;
   @state() private openCommentLine: number | null = null;
   @state() private theme = "dark";
+  @state() private planTitle = "";
 
   override connectedCallback(): void {
     super.connectedCallback();
@@ -80,9 +91,13 @@ export class RpApp extends LitElement {
 
   private async _fetchPlan(): Promise<void> {
     const res = await fetch("/plan");
-    const data = (await res.json()) as { markdown: string };
+    const data = (await res.json()) as { markdown: string; title?: string };
     this.blocks = groupBlocks(data.markdown);
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
+    if (data.title) {
+      this.planTitle = data.title;
+      document.title = `review-plan: ${data.title}`;
+    }
   }
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
@@ -220,6 +235,7 @@ export class RpApp extends LitElement {
         })}
       </div>
       <div class="toolbar">
+        ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
         <span class="status"
           >${this.comments.length === 0
             ? "No comments yet"

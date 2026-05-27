@@ -38,11 +38,15 @@ export class RpPlanLine extends LitElement {
     }
     .gutter:hover .plus {
       opacity: 1;
+      color: var(--accent);
     }
     .plus {
       opacity: 0;
       color: var(--gutter-plus);
-      transition: opacity 0.1s;
+      font-size: 1.4em;
+      font-weight: bold;
+      line-height: 1;
+      transition: opacity 0.1s, color 0.1s;
     }
     .content {
       flex: 1;

@@ -19,11 +19,18 @@ async function run(): Promise<void> {
       default: 7777,
       describe: "Port for the local server (default: 7777)",
     })
+    .option("title", {
+      alias: "t",
+      type: "string",
+      default: "",
+      describe: "Title shown in the review UI",
+    })
     .help()
     .parseAsync();
 
   const fileArg = argv._[0] as string | undefined;
   const preferredPort = argv.port;
+  const title = argv.title;
 
   let planPath: string;
   let tmpFile: string | null = null;
@@ -47,7 +54,7 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml);
+  const { server, waitForSubmit } = createServer(planPath, uiHtml, title);
   server.listen(port);
 
   const url = `http://localhost:${port}`;

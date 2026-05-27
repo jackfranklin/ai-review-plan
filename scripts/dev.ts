@@ -8,7 +8,7 @@ const PLAN_PORT = 3001;
 const UI_PORT = 5173;
 const PLAN_PATH = path.join(root, "fixtures/sample-plan.md");
 
-const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "");
+const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "", "Add dark mode support");
 planServer.listen(PLAN_PORT, () => {
   console.log(`Plan API:  http://localhost:${PLAN_PORT}`);
 });
