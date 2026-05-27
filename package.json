@@ -1,0 +1,33 @@
+{
+  "name": "review-plan",
+  "version": "0.1.0",
+  "description": "CLI + local web UI for annotating AI-generated markdown plans",
+  "type": "module",
+  "bin": {
+    "review-plan": "dist/cli.js"
+  },
+  "scripts": {
+    "dev": "vite src/ui",
+    "build": "tsx scripts/build.ts",
+    "lint": "eslint src"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "get-port": "^7.1.0",
+    "marked": "^12.0.0",
+    "open": "^10.1.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.9.0",
+    "@types/express": "^4.17.21",
+    "@types/node": "^20.14.0",
+    "esbuild": "^0.21.5",
+    "eslint": "^9.9.0",
+    "lit": "^3.1.4",
+    "tsx": "^4.16.2",
+    "typescript": "^5.5.3",
+    "typescript-eslint": "^8.0.1",
+    "vite": "^5.3.4",
+    "vite-plugin-singlefile": "^2.0.2"
+  }
+}
