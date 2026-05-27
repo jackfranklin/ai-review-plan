@@ -19,17 +19,21 @@ export function groupBlocks(markdown: string): Block[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block: ``` or ~~~
-    const fenceMatch = /^(`{3,}|~{3,})/.exec(line);
+    // Fenced code block: ``` or ~~~ with up to 3 spaces of leading indentation
+    const fenceMatch = /^( {0,3})(`{3,}|~{3,})/.exec(line);
     if (fenceMatch) {
-      const fence = fenceMatch[1];
+      const fenceChar = fenceMatch[2][0];
+      const fenceLen = fenceMatch[2].length;
       const start = i;
       i++;
-      while (i < lines.length && !lines[i].startsWith(fence)) {
+      while (i < lines.length) {
+        const closing = /^( {0,3})(`{3,}|~{3,})/.exec(lines[i]);
+        if (closing && closing[2][0] === fenceChar && closing[2].length >= fenceLen) {
+          i++; // include closing fence
+          break;
+        }
         i++;
       }
-      // include closing fence if present
-      if (i < lines.length) i++;
       blocks.push({
         startLine: start + 1,
         endLine: i,

@@ -10,9 +10,9 @@ export class RpApp extends LitElement {
   static styles = css`
     :host {
       display: block;
-      max-width: 860px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 2rem 1rem 6rem;
+      padding: 2rem 2rem 6rem;
     }
     .toolbar {
       position: fixed;

@@ -7,7 +7,7 @@
     "review-plan": "dist/cli.js"
   },
   "scripts": {
-    "dev": "vite src/ui",
+    "dev": "tsx scripts/dev.ts",
     "build": "tsx scripts/build.ts",
     "lint": "eslint src"
   },

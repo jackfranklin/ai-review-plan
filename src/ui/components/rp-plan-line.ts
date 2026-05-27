@@ -15,17 +15,20 @@ export class RpPlanLine extends LitElement {
     }
     .line-wrap {
       display: flex;
-      align-items: flex-start;
+      align-items: center;
       border-radius: 3px;
+    }
+    .line-wrap.multiline {
+      align-items: flex-start;
     }
     .line-wrap.focused {
       background: #2a2d2e;
     }
     .gutter {
-      width: 2rem;
+      width: 4rem;
       flex-shrink: 0;
       text-align: right;
-      padding-right: 0.5rem;
+      padding-right: 0.75rem;
       color: #555;
       font-size: 0.8em;
       line-height: 1.6;
@@ -132,7 +135,7 @@ export class RpPlanLine extends LitElement {
         : `${this.block.startLine}–${this.block.endLine}`;
 
     return html`
-      <div class="line-wrap ${this.focused ? "focused" : ""}" @click=${this._onLineClick}>
+      <div class="line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}" @click=${this._onLineClick}>
         <div class="gutter" @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
           <span class="plus">+</span>
           <span>${lineLabel}</span>
