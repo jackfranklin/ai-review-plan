@@ -187,8 +187,10 @@ export class RpApp extends LitElement {
   }
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
-    const tag = (e.target as HTMLElement).tagName.toLowerCase();
-    const inInput = tag === "textarea" || tag === "input";
+    const inInput = e.composedPath().some(el => {
+      const tag = (el as HTMLElement).tagName?.toLowerCase();
+      return tag === "textarea" || tag === "input";
+    });
 
     if (e.key === "Escape") {
       if (this.showHelp) { this.showHelp = false; return; }
