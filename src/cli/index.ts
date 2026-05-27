@@ -6,25 +6,24 @@ import type { Comment } from "../server/server.js";
 import getPort from "get-port";
 import open from "open";
 import { UI_HTML } from "./ui-html.js";
-
-const DEFAULT_PORT = 7777;
-
-function parseArgs(): { file: string | null; port: number } {
-  const args = process.argv.slice(2);
-  let file: string | null = null;
-  let port = DEFAULT_PORT;
-  for (let i = 0; i < args.length; i++) {
-    if ((args[i] === "--port" || args[i] === "-p") && args[i + 1]) {
-      port = parseInt(args[++i], 10);
-    } else if (!args[i].startsWith("-")) {
-      file = args[i];
-    }
-  }
-  return { file, port };
-}
+import yargs from "yargs";
+import { hideBin } from "yargs/helpers";
 
 async function run(): Promise<void> {
-  const { file: fileArg, port: preferredPort } = parseArgs();
+  const argv = await yargs(hideBin(process.argv))
+    .usage("Usage: review-plan [file]")
+    .positional("file", { describe: "Plan markdown file (reads stdin if omitted)", type: "string" })
+    .option("port", {
+      alias: "p",
+      type: "number",
+      default: 7777,
+      describe: "Port for the local server (default: 7777)",
+    })
+    .help()
+    .parseAsync();
+
+  const fileArg = argv._[0] as string | undefined;
+  const preferredPort = argv.port;
 
   let planPath: string;
   let tmpFile: string | null = null;
