@@ -62,6 +62,64 @@ export class RpApp extends LitElement {
       cursor: pointer;
     }
     button.done:hover { background: var(--accent-hover); }
+    button.help {
+      font: inherit;
+      font-size: 0.85em;
+      padding: 0.2rem 0.6rem;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      cursor: pointer;
+    }
+    button.help:hover { color: var(--text); border-color: var(--text-muted); }
+    .backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+    }
+    .modal {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem;
+      min-width: 340px;
+      max-width: 480px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+    .modal h2 {
+      margin: 0 0 1rem;
+      font-size: 1em;
+      color: var(--heading);
+    }
+    .shortcut-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .shortcut-table td {
+      padding: 0.3rem 0;
+      color: var(--text-muted);
+      font-size: 0.9em;
+    }
+    .shortcut-table td:first-child {
+      width: 40%;
+      white-space: nowrap;
+    }
+    kbd {
+      display: inline-block;
+      padding: 0.1em 0.4em;
+      font: inherit;
+      font-size: 0.85em;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 3px;
+      color: var(--text);
+      line-height: 1.4;
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -70,6 +128,7 @@ export class RpApp extends LitElement {
   @state() private openCommentLine: number | null = null;
   @state() private theme = "dark";
   @state() private planTitle = "";
+  @state() private showHelp = false;
 
   private get _storageKey(): string {
     return `review-plan:comments:${window.location.port}`;
@@ -132,6 +191,7 @@ export class RpApp extends LitElement {
     const inInput = tag === "textarea" || tag === "input";
 
     if (e.key === "Escape") {
+      if (this.showHelp) { this.showHelp = false; return; }
       this.openCommentLine = null;
       return;
     }
@@ -161,6 +221,9 @@ export class RpApp extends LitElement {
           e.preventDefault();
           void this._submit();
         }
+        break;
+      case "?":
+        this.showHelp = !this.showHelp;
         break;
     }
   };
@@ -216,6 +279,29 @@ export class RpApp extends LitElement {
 
   private _onCommentDelete(e: CustomEvent<Comment>): void {
     this.comments = this.comments.filter((c) => c !== e.detail);
+  }
+
+  private _renderHelp() {
+    return html`
+      <div class="backdrop" @click=${() => { this.showHelp = false; }}>
+        <div class="modal" @click=${(e: Event) => { e.stopPropagation(); }}>
+          <h2>Keyboard shortcuts</h2>
+          <table class="shortcut-table">
+            <tbody>
+              <tr><td><kbd>j</kbd> / <kbd>↓</kbd></td><td>Next block</td></tr>
+              <tr><td><kbd>k</kbd> / <kbd>↑</kbd></td><td>Previous block</td></tr>
+              <tr><td><kbd>c</kbd></td><td>Comment on focused block</td></tr>
+              <tr><td><kbd>n</kbd></td><td>Next comment</td></tr>
+              <tr><td><kbd>p</kbd></td><td>Previous comment</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save comment</td></tr>
+              <tr><td><kbd>Esc</kbd></td><td>Cancel / close</td></tr>
+              <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Submit review</td></tr>
+              <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    `;
   }
 
   private async _submit(): Promise<void> {
@@ -276,8 +362,10 @@ export class RpApp extends LitElement {
           <option value="dark">Dark</option>
           <option value="light">Light</option>
         </select>
+        <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
         <button class="done" @click=${this._submit}>Done reviewing (Ctrl+D)</button>
       </div>
+      ${this.showHelp ? this._renderHelp() : ""}
     `;
   }
 }
