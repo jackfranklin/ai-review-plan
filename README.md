@@ -27,7 +27,7 @@ automatically when Claude is about to execute a multi-step plan.
 
 Copy the template below to `~/.claude/skills/review-plan.md`:
 
-```markdown
+````markdown
 ---
 name: review-plan
 description: >
@@ -55,7 +55,7 @@ You are presenting a plan for human review using the review-plan CLI.
 - Pass `--theme light` if the user prefers a light UI.
 - Do not proceed with execution until after review is complete.
 - If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
-```
+````
 
 Then ask Claude: **"use /review-plan before you start"** — or invoke it directly with `/review-plan`.
 
