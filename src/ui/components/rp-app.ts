@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { groupBlocks } from "../blocks.js";
+import { groupBlocks, parseDiff } from "../blocks.js";
 import type { Block } from "../blocks.js";
 import type { Comment } from "../types.js";
 import "./rp-plan-line.js";
@@ -120,6 +120,51 @@ export class RpApp extends LitElement {
       color: var(--text);
       line-height: 1.4;
     }
+    .file-nav {
+      position: fixed;
+      top: 1rem;
+      left: 1rem;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.5rem;
+      max-width: 250px;
+      z-index: 20;
+      font-size: 0.85em;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    .file-nav h3 {
+      margin: 0 0 0.3rem;
+      font-size: 0.9em;
+      color: var(--heading);
+    }
+    .file-nav ul {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .file-nav li {
+      margin: 0.2rem 0;
+    }
+    .file-nav a {
+      color: var(--link);
+      text-decoration: none;
+      cursor: pointer;
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .file-nav a:hover {
+      text-decoration: underline;
+    }
+    rp-plan-line.sticky-header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      background: var(--bg);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -129,6 +174,8 @@ export class RpApp extends LitElement {
   @state() private theme = "dark";
   @state() private planTitle = "";
   @state() private showHelp = false;
+  @state() private mode = "plan";
+  @state() private files: string[] = [];
 
   private get _storageKey(): string {
     return `review-plan:comments:${window.location.port}`;
@@ -170,8 +217,18 @@ export class RpApp extends LitElement {
 
   private async _fetchPlan(): Promise<void> {
     const res = await fetch("/plan");
-    const data = (await res.json()) as { markdown: string; title?: string; theme?: string };
-    this.blocks = groupBlocks(data.markdown);
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string };
+    this.mode = data.mode ?? "plan";
+    
+    if (this.mode === "diff") {
+      this.blocks = parseDiff(data.markdown);
+      this.files = this.blocks
+        .filter((b) => b.raw.startsWith("File: "))
+        .map((b) => b.raw.substring(6));
+    } else {
+      this.blocks = groupBlocks(data.markdown);
+    }
+
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
     if (data.title) {
       this.planTitle = data.title;
@@ -319,12 +376,37 @@ export class RpApp extends LitElement {
       "<p style='padding:2rem;color:#888'>Done! You can close this tab.</p>";
   };
 
+  private _scrollToFile(fileName: string) {
+    const block = this.blocks.find((b) => b.raw === `File: ${fileName}`);
+    if (block) {
+      const el = this.shadowRoot?.querySelector(`rp-plan-line[data-start-line="${block.startLine}"]`);
+      el?.scrollIntoView({ behavior: "smooth", block: "start" });
+      this.focusedLine = block.startLine;
+    }
+  }
+
   override render() {
     if (this.blocks.length === 0) {
       return html`<p style="color:#888">Loading…</p>`;
     }
 
     return html`
+      ${this.mode === "diff" && this.files.length > 0
+        ? html`
+            <div class="file-nav">
+              <h3>Files</h3>
+              <ul>
+                ${this.files.map(
+                  (file) => html`
+                    <li>
+                      <a @click=${() => { this._scrollToFile(file); }}>${file}</a>
+                    </li>
+                  `
+                )}
+              </ul>
+            </div>
+          `
+        : ""}
       <div
         @request-comment=${this._onRequestComment}
         @line-focus=${this._onLineFocus}
@@ -341,13 +423,17 @@ export class RpApp extends LitElement {
             this.openCommentLine !== null &&
             this.openCommentLine >= block.startLine &&
             this.openCommentLine <= block.endLine;
+          const isHeader = block.raw.startsWith("File: ");
           return html`
             <rp-plan-line
+              data-start-line=${block.startLine}
+              class=${isHeader ? "sticky-header" : ""}
               .block=${block}
               .comments=${blockComments}
               ?focused=${this.focusedLine >= block.startLine &&
                 this.focusedLine <= block.endLine}
               ?commentOpen=${isOpen}
+              .isDiff=${this.mode === "diff"}
             ></rp-plan-line>
           `;
         })}

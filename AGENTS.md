@@ -7,7 +7,7 @@ Guidelines for AI agents working in this repository.
 ## Project overview
 
 `review-plan` is a Node.js CLI + Lit web UI. The CLI starts a local HTTP server,
-opens the browser, waits for the user to annotate a markdown plan, then prints
+opens the browser, waits for the user to annotate a markdown plan or a git diff, then prints
 annotated output to stdout. It is itself a tool used by AI agents (via the
 Claude Code skill) to solicit human feedback mid-task.
 
@@ -37,13 +37,14 @@ on every build.
 ## Dev workflow
 
 ```bash
-npm run dev
+npm run dev-plan     # dev server for plans
+npm run dev-diff     # dev server for diffs
 ```
 
 `scripts/dev.ts` starts two servers:
 
 - **Plan API** on port 3001 — the same `node:http` server used in production,
-  serving `fixtures/sample-plan.md` via `GET /plan` and accepting `POST /submit`
+  serving `fixtures/sample-plan.md` (plan mode) or `fixtures/sample-diff.diff` (diff mode) via `GET /plan` and accepting `POST /submit`
 - **Vite** on port 5173 — full HMR, proxies `/plan` and `/submit` to port 3001
 
 Open **http://localhost:5173** in the browser. Edit any file under `src/ui/` and
@@ -137,7 +138,7 @@ both the server and the UI fetch calls.
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/` | GET | Serves the inlined UI HTML |
-| `/plan` | GET | Returns `{ markdown: string }` |
+| `/plan` | GET | Returns `{ markdown: string, title?: string, theme?: string, mode?: string }` |
 | `/submit` | POST | Accepts `{ comments: Comment[] }`, resolves the await in CLI |
 
 After `/submit` is called, the server closes and the CLI exits. The server is

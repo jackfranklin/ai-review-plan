@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupBlocks, parseLineIndent } from "./blocks.js";
+import { groupBlocks, parseLineIndent, parseDiff } from "./blocks.js";
 
 describe("groupBlocks", () => {
   it("returns one block per line for plain content", () => {
@@ -64,5 +64,33 @@ describe("parseLineIndent", () => {
   it("handles lines with only spaces", () => {
     const result = parseLineIndent("   ");
     expect(result).toEqual({ raw: "", indent: 3 });
+  });
+});
+
+describe("parseDiff", () => {
+  it("parses file markers correctly", () => {
+    const diff = "--- a/file.ts\n+++ b/file.ts\ncontent";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].raw).toBe("File: file.ts");
+    expect(blocks[1].raw).toBe("content");
+  });
+
+  it("parses hunk headers and tracks line numbers", () => {
+    const diff = "@@ -10,2 +10,2 @@\n line 1\n-line 2\n+line 2 mod";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(4);
+    expect(blocks[1]).toMatchObject({ raw: " line 1", oldLine: 10, newLine: 10 });
+    expect(blocks[2]).toMatchObject({ raw: "-line 2", oldLine: 11 });
+    expect(blocks[3]).toMatchObject({ raw: "+line 2 mod", newLine: 11 });
+  });
+
+  it("handles headers without line numbers", () => {
+    const diff = "diff --git a/file.ts b/file.ts\nindex 123..456\n@@ -1,1 +1,1 @@\n content";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(4);
+    expect(blocks[0].oldLine).toBeUndefined();
+    expect(blocks[1].oldLine).toBeUndefined();
+    expect(blocks[3]).toMatchObject({ raw: " content", oldLine: 1, newLine: 1 });
   });
 });
