@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createServer } from "../server/server.js";
-import type { Comment } from "../server/server.js";
+import { formatOutput } from "./format.js";
 import getPort from "get-port";
 import open from "open";
 import { UI_HTML } from "./ui-html.js";
@@ -72,6 +72,7 @@ async function run(): Promise<void> {
     process.stderr.write(`Could not open browser automatically. Visit: ${url}\n`);
   }
 
+  const planContent = fs.readFileSync(planPath, "utf-8");
   const comments = await waitForSubmit();
 
   server.close();
@@ -82,49 +83,8 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
-  process.stdout.write(formatOutput(planPath, comments));
+  process.stdout.write(formatOutput(planContent, comments));
   process.exit(0);
-}
-
-function formatOutput(planPath: string, comments: Comment[]): string {
-  const lines = fs.readFileSync(planPath, "utf-8").split("\n");
-
-  const commentsByLine = new Map<number, Comment[]>();
-  for (const c of comments) {
-    const existing = commentsByLine.get(c.startLine) ?? [];
-    existing.push(c);
-    commentsByLine.set(c.startLine, existing);
-  }
-
-  const annotated: string[] = ["<!-- review-plan output -->", "", "## Annotated Plan", ""];
-
-  for (let i = 0; i < lines.length; i++) {
-    const lineNum = i + 1;
-    annotated.push(lines[i]);
-    const lineComments = commentsByLine.get(lineNum);
-    if (lineComments) {
-      for (const c of lineComments) {
-        const label =
-          c.startLine === c.endLine
-            ? `line ${String(c.startLine)}`
-            : `lines ${String(c.startLine)}–${String(c.endLine)}`;
-        annotated.push(`> **Comment (${label}):** ${c.text}`);
-      }
-    }
-  }
-
-  annotated.push("", "## Comment Summary", "");
-  annotated.push("| Lines | Comment |");
-  annotated.push("|-------|---------|");
-
-  const sorted = [...comments].sort((a, b) => a.startLine - b.startLine);
-  for (const c of sorted) {
-    const label =
-      c.startLine === c.endLine ? String(c.startLine) : `${String(c.startLine)}–${String(c.endLine)}`;
-    annotated.push(`| ${label} | ${c.text} |`);
-  }
-
-  return annotated.join("\n") + "\n";
 }
 
 run().catch((err: unknown) => {

@@ -3,6 +3,26 @@
   "version": "0.1.0",
   "description": "CLI + local web UI for annotating AI-generated markdown plans",
   "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jackfranklin/ai-review-plan.git"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "review",
+    "plan",
+    "markdown",
+    "annotation"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "type": "module",
   "bin": {
     "review-plan": "dist/cli.js"
@@ -10,8 +30,11 @@
   "scripts": {
     "dev": "tsx scripts/dev.ts",
     "build": "tsx scripts/build.ts",
+    "test": "vitest run",
     "lint": "eslint src",
-    "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.ui.json --noEmit && tsc -p tsconfig.scripts.json --noEmit"
+    "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.ui.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
+    "prepublishOnly": "npm run build",
+    "prepare": "husky"
   },
   "dependencies": {
     "get-port": "^7.1.0",
@@ -20,16 +43,20 @@
     "yargs": "^18.0.0"
   },
   "devDependencies": {
+    "@commitlint/cli": "^21.0.1",
+    "@commitlint/config-conventional": "^21.0.1",
     "@eslint/js": "^9.9.0",
     "@types/node": "^20.14.0",
     "@types/yargs": "^17.0.35",
     "esbuild": "^0.21.5",
     "eslint": "^9.9.0",
+    "husky": "^9.1.7",
     "lit": "^3.1.4",
     "tsx": "^4.16.2",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1",
     "vite": "^5.3.4",
-    "vite-plugin-singlefile": "^2.0.2"
+    "vite-plugin-singlefile": "^2.0.2",
+    "vitest": "^4.1.7"
   }
 }
