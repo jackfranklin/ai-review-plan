@@ -51,7 +51,7 @@ export class RpCommentThread extends LitElement {
 
   @property({ attribute: false }) comment!: Comment;
 
-  private _edit() {
+  private _edit = (): void => {
     this.dispatchEvent(
       new CustomEvent("comment-edit", {
         detail: this.comment,
@@ -59,9 +59,9 @@ export class RpCommentThread extends LitElement {
         composed: true,
       })
     );
-  }
+  };
 
-  private _delete() {
+  private _delete = (): void => {
     this.dispatchEvent(
       new CustomEvent("comment-delete", {
         detail: this.comment,
@@ -69,11 +69,11 @@ export class RpCommentThread extends LitElement {
         composed: true,
       })
     );
-  }
+  };
 
   override render() {
     const { startLine, endLine } = this.comment;
-    const lineLabel = startLine === endLine ? `line ${startLine}` : `lines ${startLine}–${endLine}`;
+    const lineLabel = startLine === endLine ? `line ${String(startLine)}` : `lines ${String(startLine)}–${String(endLine)}`;
     return html`
       <div class="thread">
         <div class="header">Comment on ${lineLabel}</div>

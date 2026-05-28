@@ -58,20 +58,14 @@ tables, long code blocks).
 
 ---
 
-## Type checking
+## Type checking and Linting
 
-There are three separate tsconfigs — always check all three after edits:
+Always run type checking and linting after making changes to ensure code quality and prevent errors:
 
 ```bash
-npx tsc -p tsconfig.cli.json --noEmit     # src/cli/, src/server/
-npx tsc -p tsconfig.ui.json --noEmit      # src/ui/
-npx tsc -p tsconfig.scripts.json --noEmit # scripts/
+npm run typecheck
+npm run lint
 ```
-
-`tsconfig.json` is a composite root that references the other two (cli + ui).
-`tsconfig.scripts.json` is standalone.
-
-All configs use `strict: true`.
 
 ---
 

@@ -59,7 +59,7 @@ export class RpCommentBox extends LitElement {
 
   private _text = "";
 
-  private _onKeydown(e: KeyboardEvent) {
+  private _onKeydown = (e: KeyboardEvent): void => {
     if (e.key === "Escape") {
       this._cancel();
       return;
@@ -67,9 +67,9 @@ export class RpCommentBox extends LitElement {
     if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
       this._save();
     }
-  }
+  };
 
-  private _save() {
+  private _save = (): void => {
     const text = this._text.trim();
     if (!text) return;
     this.dispatchEvent(
@@ -80,10 +80,14 @@ export class RpCommentBox extends LitElement {
       })
     );
     this._text = "";
-  }
+  };
 
-  private _cancel() {
+  private _cancel = (): void => {
     this.dispatchEvent(new CustomEvent("comment-cancel", { bubbles: true, composed: true }));
+  };
+
+  override firstUpdated() {
+    this.shadowRoot?.querySelector("textarea")?.focus();
   }
 
   override render() {

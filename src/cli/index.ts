@@ -49,7 +49,7 @@ async function run(): Promise<void> {
     }
   } else {
     const content = fs.readFileSync(process.stdin.fd, "utf-8");
-    tmpFile = path.join(os.tmpdir(), `plan-review-${Date.now()}.md`);
+    tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.md`);
     fs.writeFileSync(tmpFile, content);
     planPath = tmpFile;
   }
@@ -63,7 +63,7 @@ async function run(): Promise<void> {
   const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme);
   server.listen(port);
 
-  const url = `http://localhost:${port}`;
+  const url = `http://localhost:${String(port)}`;
   process.stderr.write(`Opening ${url}\n`);
 
   try {

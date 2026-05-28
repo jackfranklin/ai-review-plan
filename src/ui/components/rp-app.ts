@@ -188,7 +188,7 @@ export class RpApp extends LitElement {
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
     const inInput = e.composedPath().some(el => {
-      const tag = (el as HTMLElement).tagName?.toLowerCase();
+      const tag = (el as HTMLElement).tagName.toLowerCase();
       return tag === "textarea" || tag === "input";
     });
 
@@ -232,8 +232,10 @@ export class RpApp extends LitElement {
 
   private _moveFocus(delta: number): void {
     const idx = this.blocks.findIndex((b) => b.startLine === this.focusedLine);
-    const next = this.blocks[idx + delta];
-    if (next) this.focusedLine = next.startLine;
+    if (idx + delta >= 0 && idx + delta < this.blocks.length) {
+      const next = this.blocks[idx + delta];
+      this.focusedLine = next.startLine;
+    }
   }
 
   private _jumpToComment(delta: number): void {
@@ -251,37 +253,37 @@ export class RpApp extends LitElement {
     }
   }
 
-  private _onRequestComment(e: CustomEvent<{ startLine: number; endLine: number }>): void {
+  private _onRequestComment = (e: CustomEvent<{ startLine: number; endLine: number }>): void => {
     this.focusedLine = e.detail.startLine;
     this.openCommentLine = e.detail.startLine;
-  }
+  };
 
-  private _onLineFocus(e: CustomEvent<{ startLine: number }>): void {
+  private _onLineFocus = (e: CustomEvent<{ startLine: number }>): void => {
     this.focusedLine = e.detail.startLine;
-  }
+  };
 
-  private _onCommentSave(
+  private _onCommentSave = (
     e: CustomEvent<{ startLine: number; endLine: number; text: string }>
-  ): void {
+  ): void => {
     const { startLine, endLine, text } = e.detail;
     this.comments = [...this.comments, { startLine, endLine, text }];
     this.openCommentLine = null;
-  }
+  };
 
-  private _onCommentCancel(): void {
+  private _onCommentCancel = (): void => {
     this.openCommentLine = null;
-  }
+  };
 
-  private _onCommentEdit(e: CustomEvent<Comment>): void {
+  private _onCommentEdit = (e: CustomEvent<Comment>): void => {
     const target = e.detail;
     this.comments = this.comments.filter((c) => c !== target);
     this.openCommentLine = target.startLine;
     this.focusedLine = target.startLine;
-  }
+  };
 
-  private _onCommentDelete(e: CustomEvent<Comment>): void {
+  private _onCommentDelete = (e: CustomEvent<Comment>): void => {
     this.comments = this.comments.filter((c) => c !== e.detail);
-  }
+  };
 
   private _renderHelp() {
     return html`
@@ -306,7 +308,7 @@ export class RpApp extends LitElement {
     `;
   }
 
-  private async _submit(): Promise<void> {
+  private _submit = async (): Promise<void> => {
     await fetch("/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -315,7 +317,7 @@ export class RpApp extends LitElement {
     localStorage.removeItem(this._storageKey);
     document.body.innerHTML =
       "<p style='padding:2rem;color:#888'>Done! You can close this tab.</p>";
-  }
+  };
 
   override render() {
     if (this.blocks.length === 0) {
@@ -355,7 +357,7 @@ export class RpApp extends LitElement {
         <span class="status"
           >${this.comments.length === 0
             ? "No comments yet"
-            : `${this.comments.length} comment${this.comments.length === 1 ? "" : "s"}`}</span
+            : `${String(this.comments.length)} comment${this.comments.length === 1 ? "" : "s"}`}</span
         >
         <select
           .value=${this.theme}
