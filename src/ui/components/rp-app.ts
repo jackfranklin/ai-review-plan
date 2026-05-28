@@ -380,7 +380,7 @@ export class RpApp extends LitElement {
   private _scrollToFile(fileName: string) {
     const block = this.blocks.find((b) => b.raw === `File: ${fileName}`);
     if (block) {
-      const el = this.shadowRoot?.querySelector(`rp-plan-line[data-start-line="${block.startLine}"]`);
+      const el = this.shadowRoot?.querySelector(`rp-plan-line[data-start-line="${String(block.startLine)}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
       this.focusedLine = block.startLine;
     }
