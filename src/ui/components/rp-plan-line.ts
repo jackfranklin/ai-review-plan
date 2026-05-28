@@ -133,6 +133,17 @@ export class RpPlanLine extends LitElement {
     );
   }
 
+  private _onLineDblClick(e: MouseEvent) {
+    e.stopPropagation();
+    this.dispatchEvent(
+      new CustomEvent("request-comment", {
+        detail: { startLine: this.block.startLine, endLine: this.block.endLine },
+        bubbles: true,
+        composed: true,
+      })
+    );
+  }
+
   override render() {
     const rendered = marked.parse(this.block.raw) as string;
     const lineLabel =
@@ -141,7 +152,7 @@ export class RpPlanLine extends LitElement {
         : `${this.block.startLine}–${this.block.endLine}`;
 
     return html`
-      <div class="line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}" @click=${this._onLineClick}>
+      <div class="line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}" @click=${this._onLineClick} @dblclick=${this._onLineDblClick}>
         <div class="gutter" @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
           <span class="plus">+</span>
           <span>${lineLabel}</span>

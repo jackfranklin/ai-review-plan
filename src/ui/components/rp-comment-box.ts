@@ -86,6 +86,10 @@ export class RpCommentBox extends LitElement {
     this.dispatchEvent(new CustomEvent("comment-cancel", { bubbles: true, composed: true }));
   }
 
+  override firstUpdated() {
+    this.shadowRoot?.querySelector("textarea")?.focus();
+  }
+
   override render() {
     return html`
       <div class="box">
