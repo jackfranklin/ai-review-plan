@@ -40,4 +40,14 @@ describe("formatOutput", () => {
     const separatorIdx = lines.findIndex(l => l === "|-------|---------|");
     expect(lines[separatorIdx + 1]).toBe("");
   });
+  it("omits the annotated plan when diffOnly is true", () => {
+    const result = formatOutput("Line 1\nLine 2", [
+      { startLine: 1, endLine: 1, text: "Needs detail" },
+    ], true);
+    expect(result).toContain("<!-- review-plan output -->");
+    expect(result).not.toContain("## Annotated Plan");
+    expect(result).not.toContain("Line 1");
+    expect(result).toContain("## Comment Summary");
+    expect(result).toContain("| 1 | Needs detail |");
+  });
 });

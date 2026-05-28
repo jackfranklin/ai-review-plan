@@ -1,33 +1,37 @@
 import type { Comment } from "../server/server.js";
 
-export function formatOutput(content: string, comments: Comment[]): string {
-  const lines = content.split("\n");
+export function formatOutput(content: string, comments: Comment[], diffOnly = false): string {
+  const annotated: string[] = ["<!-- review-plan output -->", ""];
 
-  const commentsByLine = new Map<number, Comment[]>();
-  for (const c of comments) {
-    const existing = commentsByLine.get(c.startLine) ?? [];
-    existing.push(c);
-    commentsByLine.set(c.startLine, existing);
-  }
+  if (!diffOnly) {
+    const lines = content.split("\n");
+    const commentsByLine = new Map<number, Comment[]>();
+    for (const c of comments) {
+      const existing = commentsByLine.get(c.startLine) ?? [];
+      existing.push(c);
+      commentsByLine.set(c.startLine, existing);
+    }
 
-  const annotated: string[] = ["<!-- review-plan output -->", "", "## Annotated Plan", ""];
+    annotated.push("## Annotated Plan", "");
 
-  for (let i = 0; i < lines.length; i++) {
-    const lineNum = i + 1;
-    annotated.push(lines[i]);
-    const lineComments = commentsByLine.get(lineNum);
-    if (lineComments) {
-      for (const c of lineComments) {
-        const label =
-          c.startLine === c.endLine
-            ? `line ${String(c.startLine)}`
-            : `lines ${String(c.startLine)}–${String(c.endLine)}`;
-        annotated.push(`> **Comment (${label}):** ${c.text}`);
+    for (let i = 0; i < lines.length; i++) {
+      const lineNum = i + 1;
+      annotated.push(lines[i]);
+      const lineComments = commentsByLine.get(lineNum);
+      if (lineComments) {
+        for (const c of lineComments) {
+          const label =
+            c.startLine === c.endLine
+              ? `line ${String(c.startLine)}`
+              : `lines ${String(c.startLine)}–${String(c.endLine)}`;
+          annotated.push(`> **Comment (${label}):** ${c.text}`);
+        }
       }
     }
+    annotated.push("");
   }
 
-  annotated.push("", "## Comment Summary", "");
+  annotated.push("## Comment Summary", "");
   annotated.push("| Lines | Comment |");
   annotated.push("|-------|---------|");
 

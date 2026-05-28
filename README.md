@@ -97,6 +97,9 @@ review-plan --title "Auth refactor" plan.md
 # Light or dark theme
 review-plan --theme light plan.md
 review-plan --theme dark plan.md
+
+# Token-efficient mode for AI agents (omits full plan from output)
+review-plan --diff-only plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.
@@ -131,7 +134,9 @@ When you leave comments, the CLI prints:
 ```
 
 The interleaved format gives spatial context; the summary table gives the agent
-a quick structured view to work from. Both are always present.
+a quick structured view to work from. Both are always present by default.
+
+When the `--diff-only` flag is passed, the `## Annotated Plan` section is omitted, and only the `## Comment Summary` is printed. This is useful for saving tokens when the AI already has the plan in its context history.
 
 ---
 
