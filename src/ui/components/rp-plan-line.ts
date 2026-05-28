@@ -3,7 +3,7 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { customElement, property } from "lit/decorators.js";
 import { marked } from "marked";
 import type { Comment } from "../types.js";
-import type { Block } from "../blocks.js";
+import { parseLineIndent, type Block } from "../blocks.js";
 import "./rp-comment-box.js";
 import "./rp-comment-thread.js";
 
@@ -145,7 +145,8 @@ export class RpPlanLine extends LitElement {
   }
 
   override render() {
-    const rendered = marked.parse(this.block.raw) as string;
+    const { raw, indent } = parseLineIndent(this.block.raw);
+    const rendered = marked.parse(raw) as string;
     const lineLabel =
       this.block.startLine === this.block.endLine
         ? String(this.block.startLine)
@@ -157,7 +158,7 @@ export class RpPlanLine extends LitElement {
           <span class="plus">+</span>
           <span>${lineLabel}</span>
         </div>
-        <div class="content">${unsafeHTML(rendered)}</div>
+        <div class="content" style="${indent > 0 ? `padding-left: ${String(indent * 0.5)}rem;` : ''}">${unsafeHTML(rendered)}</div>
       </div>
       ${this.commentOpen
         ? html`<rp-comment-box

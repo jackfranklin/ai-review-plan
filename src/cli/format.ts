@@ -20,8 +20,8 @@ export function formatOutput(content: string, comments: Comment[]): string {
       for (const c of lineComments) {
         const label =
           c.startLine === c.endLine
-            ? `line ${c.startLine}`
-            : `lines ${c.startLine}–${c.endLine}`;
+            ? `line ${String(c.startLine)}`
+            : `lines ${String(c.startLine)}–${String(c.endLine)}`;
         annotated.push(`> **Comment (${label}):** ${c.text}`);
       }
     }
@@ -34,7 +34,7 @@ export function formatOutput(content: string, comments: Comment[]): string {
   const sorted = [...comments].sort((a, b) => a.startLine - b.startLine);
   for (const c of sorted) {
     const label =
-      c.startLine === c.endLine ? `${c.startLine}` : `${c.startLine}–${c.endLine}`;
+      c.startLine === c.endLine ? String(c.startLine) : `${String(c.startLine)}–${String(c.endLine)}`;
     annotated.push(`| ${label} | ${c.text} |`);
   }
 

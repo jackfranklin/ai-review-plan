@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupBlocks } from "./blocks.js";
+import { groupBlocks, parseLineIndent } from "./blocks.js";
 
 describe("groupBlocks", () => {
   it("returns one block per line for plain content", () => {
@@ -27,7 +27,9 @@ describe("groupBlocks", () => {
     const blocks = groupBlocks("- item\n   ```\n   code\n   ```\ntext");
     const fence = blocks.find(b => b.raw.includes("code"));
     expect(fence).toBeDefined();
-    expect(fence!.startLine).toBeLessThan(fence!.endLine);
+    if (fence) {
+      expect(fence.startLine).toBeLessThan(fence.endLine);
+    }
   });
 
   it("treats a 4-space-indented line as a plain block, not a fence", () => {
@@ -40,5 +42,27 @@ describe("groupBlocks", () => {
     const blocks = groupBlocks("````\ncode\n```\nstill inside\n````\nafter");
     expect(blocks).toHaveLength(2);
     expect(blocks[0]).toMatchObject({ startLine: 1, endLine: 5 });
+  });
+});
+
+describe("parseLineIndent", () => {
+  it("returns zero indent for non-indented lines", () => {
+    const result = parseLineIndent("- item");
+    expect(result).toEqual({ raw: "- item", indent: 0 });
+  });
+
+  it("returns indent and trimmed string for indented lines", () => {
+    const result = parseLineIndent("    - item");
+    expect(result).toEqual({ raw: "- item", indent: 4 });
+  });
+
+  it("does not trim fenced code blocks", () => {
+    const result = parseLineIndent("  ```ts");
+    expect(result).toEqual({ raw: "  ```ts", indent: 0 });
+  });
+
+  it("handles lines with only spaces", () => {
+    const result = parseLineIndent("   ");
+    expect(result).toEqual({ raw: "", indent: 3 });
   });
 });

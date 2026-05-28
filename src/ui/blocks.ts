@@ -53,3 +53,18 @@ export function groupBlocks(markdown: string): Block[] {
 
   return blocks;
 }
+
+export function parseLineIndent(raw: string): { raw: string; indent: number } {
+  let indent = 0;
+  const isFenced = /^( {0,3})(`{3,}|~{3,})/.test(raw);
+  
+  if (!isFenced) {
+    const match = /^\s+/.exec(raw);
+    indent = match ? match[0].length : 0;
+    if (indent > 0) {
+      raw = raw.trimStart();
+    }
+  }
+  
+  return { raw, indent };
+}

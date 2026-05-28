@@ -61,6 +61,9 @@ document.documentElement.dataset.theme = saved ?? preferred;
 - Unit test the toggle logic.
 - Visual regression test: screenshot both themes on the three most-used pages.
 - Manual QA checklist: forms, modals, charts, data tables.
+    - **Edge Cases**:
+        - Verify behavior when OS changes theme while app is open.
+        - Check performance of theme switching on pages with many elements.
 
 ---
 
