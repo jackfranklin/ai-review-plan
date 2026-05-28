@@ -34,7 +34,8 @@
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.ui.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",
     "prepublishOnly": "npm run build",
-    "prepare": "husky"
+    "prepare": "husky",
+    "ci": "npm run test && npm run typecheck && npm run lint"
   },
   "dependencies": {
     "get-port": "^7.1.0",
