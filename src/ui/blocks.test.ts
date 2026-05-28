@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupBlocks, parseLineIndent } from "./blocks.js";
+import { groupBlocks, parseLineIndent, parseDiff } from "./blocks.js";
 
 describe("groupBlocks", () => {
   it("returns one block per line for plain content", () => {
@@ -64,5 +64,62 @@ describe("parseLineIndent", () => {
   it("handles lines with only spaces", () => {
     const result = parseLineIndent("   ");
     expect(result).toEqual({ raw: "", indent: 3 });
+  });
+});
+
+describe("parseDiff", () => {
+  it("parses file markers correctly", () => {
+    const diff = "--- a/file.ts\n+++ b/file.ts\ncontent";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0].raw).toBe("File: file.ts");
+    expect(blocks[1].raw).toBe("content");
+  });
+
+  it("parses hunk headers and tracks line numbers", () => {
+    const diff = "@@ -10,2 +10,2 @@\n line 1\n-line 2\n+line 2 mod";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(4);
+    expect(blocks[1]).toMatchObject({ raw: " line 1", oldLine: 10, newLine: 10 });
+    expect(blocks[2]).toMatchObject({ raw: "-line 2", oldLine: 11 });
+    expect(blocks[3]).toMatchObject({ raw: "+line 2 mod", newLine: 11 });
+  });
+
+  it("handles headers without line numbers", () => {
+    const diff = "diff --git a/file.ts b/file.ts\nindex 123..456\n@@ -1,1 +1,1 @@\n content";
+    const blocks = parseDiff(diff);
+    expect(blocks).toHaveLength(4);
+    expect(blocks[0].oldLine).toBeUndefined();
+    expect(blocks[1].oldLine).toBeUndefined();
+    expect(blocks[3]).toMatchObject({ raw: " content", oldLine: 1, newLine: 1 });
+  });
+
+  it("handles new files with --- /dev/null header", () => {
+    const diff = "--- /dev/null\n+++ b/src/new.ts\n@@ -0,0 +1,2 @@\n+line one\n+line two";
+    const blocks = parseDiff(diff);
+    expect(blocks[0].raw).toBe("File: src/new.ts");
+    const addedLines = blocks.filter((b) => b.raw.startsWith("+"));
+    expect(addedLines).toHaveLength(2);
+    expect(addedLines[0]).toMatchObject({ newLine: 1 });
+    expect(addedLines[1]).toMatchObject({ newLine: 2 });
+  });
+
+  it("does not treat +++ b/ as an added diff line when /dev/null is present", () => {
+    const diff = "--- /dev/null\n+++ b/src/new.ts\n@@ -0,0 +1,1 @@\n+content";
+    const blocks = parseDiff(diff);
+    const plusPlusLines = blocks.filter((b) => b.raw.startsWith("+++ b/"));
+    expect(plusPlusLines).toHaveLength(0);
+  });
+
+  it("correctly increments line numbers across blank context lines", () => {
+    const diff = "@@ -5,4 +5,4 @@\n line 5\n \n line 7\n-old 8\n+new 8";
+    const blocks = parseDiff(diff);
+    // " " is a blank context line — should still advance counters
+    const line7Block = blocks.find((b) => b.raw === " line 7");
+    expect(line7Block).toMatchObject({ oldLine: 7, newLine: 7 });
+    const oldLine8 = blocks.find((b) => b.raw === "-old 8");
+    expect(oldLine8).toMatchObject({ oldLine: 8 });
+    const newLine8 = blocks.find((b) => b.raw === "+new 8");
+    expect(newLine8).toMatchObject({ newLine: 8 });
   });
 });

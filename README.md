@@ -59,7 +59,7 @@ You are presenting a plan for human review using the review-plan CLI.
    and specific to the current task — the user may have multiple review tabs open
    at once and needs to tell them apart at a glance:
    ```
-   review-plan --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
+   review-plan plan --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
 3. Wait for the CLI to exit. It blocks until the user clicks Done.
@@ -77,6 +77,35 @@ You are presenting a plan for human review using the review-plan CLI.
 
 Then ask Claude: **"use /review-plan before you start"** — or invoke it directly with `/review-plan`.
 
+### Diff Skill
+
+Copy it to `~/.claude/skills/review-diff.md`:
+
+````markdown
+---
+name: review-diff
+description: >
+  Present a git diff to the user for inline annotation via the review-plan UI.
+  Use when you want to review code changes before committing or requesting review.
+---
+
+You are presenting a git diff for human review using the review-plan CLI.
+
+## Steps
+
+1. Get the diff you want to review (e.g. `git diff`).
+2. Run the CLI, piping the diff to stdin:
+   ```
+   git diff | review-plan diff --title "<short task-specific title>" --theme <dark|light>
+   ```
+   Use `--theme light` unless the user has expressed a preference for dark mode.
+3. Wait for the CLI to exit. It blocks until the user clicks Done.
+4. If the CLI prints nothing to stdout, the user had no comments.
+5. If the CLI prints annotated output, read each comment carefully and address it in code.
+````
+
+Then ask Claude: **"use /review-diff to review changes"** — or invoke it directly with `/review-diff`.
+
 ---
 
 ## Use from the command line
@@ -85,21 +114,25 @@ Then ask Claude: **"use /review-plan before you start"** — or invoke it direct
 reviewing a plan written by hand, or for integrating into your own tooling.
 
 ```bash
-# Review a file
-review-plan plan.md
+# Review a plan file
+review-plan plan plan.md
 
-# Pipe from stdin
-echo "$PLAN" | review-plan
+# Pipe plan from stdin
+echo "$PLAN" | review-plan plan
 
-# With a title (useful when reviewing multiple plans at once)
-review-plan --title "Auth refactor" plan.md
+# Review a git diff
+git diff | review-plan diff
+
+# With a title
+review-plan plan --title "Auth refactor" plan.md
+git diff | review-plan diff --title "Current Changes"
 
 # Light or dark theme
-review-plan --theme light plan.md
-review-plan --theme dark plan.md
+review-plan plan --theme light plan.md
+review-plan plan --theme dark plan.md
 
 # Token-efficient mode for AI agents (omits full plan from output)
-review-plan --diff-only plan.md
+review-plan plan --diff-only plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.

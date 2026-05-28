@@ -6,9 +6,14 @@ import { fileURLToPath } from "node:url";
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PLAN_PORT = 3001;
 const UI_PORT = 5173;
-const PLAN_PATH = path.join(root, "fixtures/sample-plan.md");
+const mode = process.argv.includes("--diff") ? "diff" : "plan";
+const PLAN_PATH = path.join(
+  root,
+  mode === "diff" ? "fixtures/sample-diff.diff" : "fixtures/sample-plan.md"
+);
+const title = mode === "diff" ? "Sample Diff Review" : "Add dark mode support";
 
-const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "", "Add dark mode support");
+const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "", title, "dark", mode);
 planServer.listen(PLAN_PORT, () => {
   console.log(`Plan API:  http://localhost:${PLAN_PORT}`);
 });

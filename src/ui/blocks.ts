@@ -2,6 +2,8 @@ export interface Block {
   startLine: number;
   endLine: number;
   raw: string;
+  oldLine?: number;
+  newLine?: number;
 }
 
 /**
@@ -67,4 +69,75 @@ export function parseLineIndent(raw: string): { raw: string; indent: number } {
   }
   
   return { raw, indent };
+}
+
+export function parseDiff(markdown: string): Block[] {
+  const lines = markdown.split("\n");
+  const blocks: Block[] = [];
+  let i = 0;
+  let oldLine = 0;
+  let newLine = 0;
+
+  while (i < lines.length) {
+    const line = lines[i];
+    const isOldFileLine = line.startsWith("--- a/") || line.startsWith("--- /dev/null");
+    if (isOldFileLine && i + 1 < lines.length && lines[i + 1].startsWith("+++ b/")) {
+      const fileName = lines[i + 1].substring(6);
+      blocks.push({
+        startLine: i + 1,
+        endLine: i + 2,
+        raw: `File: ${fileName}`,
+      });
+      i += 2;
+      continue;
+    }
+
+    const hunkMatch = /^@@ -(\d+)(?:,\d+)? \+(\d+)(?:,\d+)? @@/.exec(line);
+    if (hunkMatch) {
+      oldLine = parseInt(hunkMatch[1], 10);
+      newLine = parseInt(hunkMatch[2], 10);
+      blocks.push({
+        startLine: i + 1,
+        endLine: i + 1,
+        raw: line,
+      });
+      i++;
+      continue;
+    }
+
+    if (line.startsWith("+")) {
+      blocks.push({
+        startLine: i + 1,
+        endLine: i + 1,
+        raw: line,
+        newLine: newLine,
+      });
+      newLine++;
+      i++;
+    } else if (line.startsWith("-")) {
+      blocks.push({
+        startLine: i + 1,
+        endLine: i + 1,
+        raw: line,
+        oldLine: oldLine,
+      });
+      oldLine++;
+      i++;
+    } else {
+      const isHeader = line.startsWith("diff --git") || line.startsWith("index");
+      blocks.push({
+        startLine: i + 1,
+        endLine: i + 1,
+        raw: line,
+        oldLine: isHeader ? undefined : oldLine,
+        newLine: isHeader ? undefined : newLine,
+      });
+      if (!isHeader) {
+        oldLine++;
+        newLine++;
+      }
+      i++;
+    }
+  }
+  return blocks;
 }

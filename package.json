@@ -29,6 +29,8 @@
   },
   "scripts": {
     "dev": "tsx scripts/dev.ts",
+    "dev-plan": "tsx scripts/dev.ts",
+    "dev-diff": "tsx scripts/dev.ts --diff",
     "build": "tsx scripts/build.ts",
     "test": "vitest run",
     "lint": "eslint src",

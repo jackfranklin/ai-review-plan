@@ -36,6 +36,17 @@ export class RpPlanLine extends LitElement {
       cursor: pointer;
       position: relative;
     }
+    .gutter.is-diff {
+      width: 6rem;
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.5rem;
+      padding-right: 0.5rem;
+    }
+    .diff-ln {
+      width: 2.5rem;
+      text-align: right;
+    }
     .gutter:hover .plus {
       opacity: 1;
       color: var(--accent);
@@ -106,12 +117,16 @@ export class RpPlanLine extends LitElement {
     .content th { background: var(--table-header-bg); }
     .content a { color: var(--link); }
     .content hr { border: none; border-top: 1px solid var(--border-muted); margin: 0.5em 0; }
+    .diff-add { background: var(--diff-add-bg); color: var(--diff-add-text); }
+    .diff-del { background: var(--diff-del-bg); color: var(--diff-del-text); }
+    .diff-file-header { background: var(--bg-elevated); font-weight: bold; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); border-left: 4px solid var(--accent); }
   `;
 
   @property({ attribute: false }) block!: Block;
   @property({ attribute: false }) comments: Comment[] = [];
   @property({ type: Boolean }) focused = false;
   @property({ type: Boolean }) commentOpen = false;
+  @property({ type: Boolean }) isDiff = false;
 
   private _onGutterClick() {
     this.dispatchEvent(
@@ -145,20 +160,46 @@ export class RpPlanLine extends LitElement {
   }
 
   override render() {
-    const { raw, indent } = parseLineIndent(this.block.raw);
-    const rendered = marked.parse(raw) as string;
     const lineLabel =
       this.block.startLine === this.block.endLine
         ? String(this.block.startLine)
         : `${String(this.block.startLine)}–${String(this.block.endLine)}`;
 
+    let contentHtml;
+    let wrapClass = `line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}`;
+    let indent = 0;
+
+    if (this.isDiff) {
+      if (this.block.raw.startsWith("File: ")) {
+        wrapClass += " diff-file-header";
+        contentHtml = html`<strong style="font-family:inherit;">${this.block.raw.substring(6)}</strong>`;
+      } else {
+        const firstChar = this.block.raw[0];
+        if (firstChar === '+') wrapClass += " diff-add";
+        if (firstChar === '-') wrapClass += " diff-del";
+        contentHtml = html`<pre style="margin:0; font:inherit;"><code>${this.block.raw}</code></pre>`;
+      }
+    } else {
+      const parsed = parseLineIndent(this.block.raw);
+      indent = parsed.indent;
+      const rendered = marked.parse(parsed.raw) as string;
+      contentHtml = html`${unsafeHTML(rendered)}`;
+    }
+
     return html`
-      <div class="line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}" @click=${() => { this._onLineClick(); }} @dblclick=${(e: MouseEvent) => { this._onLineDblClick(e); }}>
-        <div class="gutter" @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
+      <div class="${wrapClass}" @click=${() => { this._onLineClick(); }} @dblclick=${(e: MouseEvent) => { this._onLineDblClick(e); }}>
+        <div class="gutter ${this.isDiff ? "is-diff" : ""}" @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
           <span class="plus">+</span>
-          <span>${lineLabel}</span>
+          ${this.isDiff
+            ? html`
+                <span class="diff-ln">${this.block.oldLine !== undefined ? String(this.block.oldLine) : ""}</span>
+                <span class="diff-ln">${this.block.newLine !== undefined ? String(this.block.newLine) : ""}</span>
+              `
+            : html`<span>${lineLabel}</span>`}
         </div>
-        <div class="content" style="${indent > 0 ? `padding-left: ${String(indent * 0.5)}rem;` : ''}">${unsafeHTML(rendered)}</div>
+        <div class="content" style="${indent > 0 ? `padding-left: ${String(indent * 0.5)}rem;` : ''}">
+          ${contentHtml}
+        </div>
       </div>
       ${this.commentOpen
         ? html`<rp-comment-box

@@ -11,8 +11,17 @@ import { hideBin } from "yargs/helpers";
 
 async function run(): Promise<void> {
   const argv = await yargs(hideBin(process.argv))
-    .usage("Usage: review-plan [file]")
-    .positional("file", { describe: "Plan markdown file (reads stdin if omitted)", type: "string" })
+    .usage("Usage: review-plan <command> [options]")
+    .command("plan [file]", "Review a markdown plan", (yargs) => {
+      return yargs.positional("file", {
+        describe: "Plan markdown file (reads stdin if omitted)",
+        type: "string",
+      });
+    })
+    .command("diff", "Review a git diff", (yargs) => {
+      return yargs;
+    })
+    .demandCommand(1, "You must specify a command")
     .option("port", {
       alias: "p",
       type: "number",
@@ -38,25 +47,38 @@ async function run(): Promise<void> {
     .help()
     .parseAsync();
 
-  const fileArg = argv._[0] as string | undefined;
+  const command = argv._[0] as string;
   const preferredPort = argv.port;
   const title = argv.title;
   const theme = argv.theme;
 
   let planPath: string;
   let tmpFile: string | null = null;
+  let mode = "plan";
 
-  if (fileArg) {
-    planPath = path.resolve(fileArg);
-    if (!fs.existsSync(planPath)) {
-      process.stderr.write(`review-plan: file not found: ${planPath}\n`);
-      process.exit(1);
+  if (command === "plan") {
+    const fileArg = argv.file as string | undefined;
+    if (fileArg) {
+      planPath = path.resolve(fileArg);
+      if (!fs.existsSync(planPath)) {
+        process.stderr.write(`review-plan: file not found: ${planPath}\n`);
+        process.exit(1);
+      }
+    } else {
+      const content = fs.readFileSync(process.stdin.fd, "utf-8");
+      tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.md`);
+      fs.writeFileSync(tmpFile, content);
+      planPath = tmpFile;
     }
-  } else {
+  } else if (command === "diff") {
+    mode = "diff";
     const content = fs.readFileSync(process.stdin.fd, "utf-8");
-    tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.md`);
+    tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.diff`);
     fs.writeFileSync(tmpFile, content);
     planPath = tmpFile;
+  } else {
+    process.stderr.write(`review-plan: unknown command: ${command}\n`);
+    process.exit(1);
   }
 
   const port = await getPort({ port: preferredPort });
@@ -65,7 +87,7 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme);
+  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode);
   server.listen(port);
 
   const url = `http://localhost:${String(port)}`;
