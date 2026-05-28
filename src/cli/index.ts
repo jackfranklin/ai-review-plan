@@ -49,7 +49,7 @@ async function run(): Promise<void> {
     }
   } else {
     const content = fs.readFileSync(process.stdin.fd, "utf-8");
-    tmpFile = path.join(os.tmpdir(), `plan-review-${Date.now()}.md`);
+    tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.md`);
     fs.writeFileSync(tmpFile, content);
     planPath = tmpFile;
   }
@@ -63,7 +63,7 @@ async function run(): Promise<void> {
   const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme);
   server.listen(port);
 
-  const url = `http://localhost:${port}`;
+  const url = `http://localhost:${String(port)}`;
   process.stderr.write(`Opening ${url}\n`);
 
   try {
@@ -106,8 +106,8 @@ function formatOutput(planPath: string, comments: Comment[]): string {
       for (const c of lineComments) {
         const label =
           c.startLine === c.endLine
-            ? `line ${c.startLine}`
-            : `lines ${c.startLine}–${c.endLine}`;
+            ? `line ${String(c.startLine)}`
+            : `lines ${String(c.startLine)}–${String(c.endLine)}`;
         annotated.push(`> **Comment (${label}):** ${c.text}`);
       }
     }
@@ -120,7 +120,7 @@ function formatOutput(planPath: string, comments: Comment[]): string {
   const sorted = [...comments].sort((a, b) => a.startLine - b.startLine);
   for (const c of sorted) {
     const label =
-      c.startLine === c.endLine ? `${c.startLine}` : `${c.startLine}–${c.endLine}`;
+      c.startLine === c.endLine ? String(c.startLine) : `${String(c.startLine)}–${String(c.endLine)}`;
     annotated.push(`| ${label} | ${c.text} |`);
   }
 
