@@ -110,7 +110,7 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
-  process.stdout.write(formatOutput(planContent, comments, argv["diff-only"] as boolean));
+  process.stdout.write(formatOutput(planContent, comments, argv["diff-only"]));
   process.exit(0);
 }
 
