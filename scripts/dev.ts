@@ -13,7 +13,7 @@ const PLAN_PATH = path.join(
 );
 const title = mode === "diff" ? "Sample Diff Review" : "Add dark mode support";
 
-const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "", title);
+const { server: planServer, waitForSubmit } = createPlanServer(PLAN_PATH, "", title, "dark", mode);
 planServer.listen(PLAN_PORT, () => {
   console.log(`Plan API:  http://localhost:${PLAN_PORT}`);
 });

@@ -172,7 +172,7 @@ export class RpPlanLine extends LitElement {
     if (this.isDiff) {
       if (this.block.raw.startsWith("File: ")) {
         wrapClass += " diff-file-header";
-        contentHtml = html`<strong style="font-family:inherit;">${this.block.raw}</strong>`;
+        contentHtml = html`<strong style="font-family:inherit;">${this.block.raw.substring(6)}</strong>`;
       } else {
         const firstChar = this.block.raw[0];
         if (firstChar === '+') wrapClass += " diff-add";

@@ -80,7 +80,8 @@ export function parseDiff(markdown: string): Block[] {
 
   while (i < lines.length) {
     const line = lines[i];
-    if (line.startsWith("--- a/") && i + 1 < lines.length && lines[i + 1].startsWith("+++ b/")) {
+    const isOldFileLine = line.startsWith("--- a/") || line.startsWith("--- /dev/null");
+    if (isOldFileLine && i + 1 < lines.length && lines[i + 1].startsWith("+++ b/")) {
       const fileName = lines[i + 1].substring(6);
       blocks.push({
         startLine: i + 1,
@@ -131,7 +132,7 @@ export function parseDiff(markdown: string): Block[] {
         oldLine: isHeader ? undefined : oldLine,
         newLine: isHeader ? undefined : newLine,
       });
-      if (!isHeader && line.trim() !== "") {
+      if (!isHeader) {
         oldLine++;
         newLine++;
       }
