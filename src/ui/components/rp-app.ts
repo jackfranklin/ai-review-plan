@@ -188,7 +188,7 @@ export class RpApp extends LitElement {
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
     const inInput = e.composedPath().some(el => {
-      const tag = (el as HTMLElement).tagName.toLowerCase();
+      const tag = (el as HTMLElement).tagName?.toLowerCase();
       return tag === "textarea" || tag === "input";
     });
 
