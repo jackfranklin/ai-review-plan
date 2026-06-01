@@ -12,6 +12,7 @@ You are presenting a git diff for human review using the review-plan CLI.
 1. Get the diff you want to review. For staged changes use `git diff --staged`;
    for all uncommitted changes use `git diff HEAD`; for a specific range use
    `git diff <base>..<head>`.
+   **Note**: Run `git add -N .` first to include untracked files in the diff. This records the intent to add the files, making them visible to `git diff` without fully staging them.
 2. Run the CLI, piping the diff to stdin:
    ```
    git diff HEAD | review-plan diff --title "<short task-specific title>" --theme <dark|light>
