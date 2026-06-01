@@ -36,75 +36,62 @@ and the agent proceeds as planned.
 
 ## Use with Claude Code
 
-The skill below tells Claude to pause before executing any multi-step plan and
-call `review-plan` automatically.
+Three ready-made skills live in the [`skills/`](./skills) folder of this
+repository. Copy the ones you want to `~/.claude/skills/` and Claude will pick
+them up automatically.
 
-Copy it to `~/.claude/skills/review-plan.md`:
+| Skill | File | Invoke with |
+|-------|------|-------------|
+| Review a plan before acting | [`skills/review-plan.md`](./skills/review-plan.md) | `/review-plan` |
+| Review a diff before committing | [`skills/review-diff.md`](./skills/review-diff.md) | `/review-diff` |
+| Walkthrough of AI-written code | [`skills/walkthrough.md`](./skills/walkthrough.md) | `/walkthrough` |
 
-````markdown
----
-name: review-plan
-description: >
-  Present a plan to the user for inline annotation via the review-plan UI.
-  Use when you have a plan ready for human review before executing it.
-  The user will annotate it in the browser; you then revise based on their comments.
----
+```bash
+# Install all three
+cp skills/*.md ~/.claude/skills/
+```
 
-You are presenting a plan for human review using the review-plan CLI.
+### review-plan
 
-## Steps
+Tells Claude to pause before executing any multi-step plan, open the review UI,
+and revise based on your comments before acting.
 
-1. Write the plan to a temporary file (e.g. `/tmp/plan-<timestamp>.md`).
-2. Run the CLI with a title and theme. Choose a title that is short (3–6 words)
-   and specific to the current task — the user may have multiple review tabs open
-   at once and needs to tell them apart at a glance:
-   ```
-   review-plan plan --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
-   ```
-   Use `--theme light` unless the user has expressed a preference for dark mode.
-3. Wait for the CLI to exit. It blocks until the user clicks Done.
-4. If the CLI prints nothing to stdout, the user had no comments — proceed with the plan as-is.
-5. If the CLI prints annotated output, read each comment carefully and revise the plan to address it. Show the revised plan to the user before proceeding.
-6. Delete the temporary file.
+```
+/review-plan
+```
 
-## Notes
+Or ask Claude: **"use /review-plan before you start"**.
 
-- Always pass `--title`. Derive it from the current conversation (e.g. "Auth middleware refactor", "Add dark mode", "DB migration plan") — never use a generic title like "Plan review".
-- Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
-- Do not proceed with execution until after review is complete.
-- If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
-````
+### review-diff
 
-Then ask Claude: **"use /review-plan before you start"** — or invoke it directly with `/review-plan`.
+Tells Claude to pipe the current diff into the review UI so you can annotate
+changes before they are committed or pushed.
 
-### Diff Skill
+```
+/review-diff
+```
 
-Copy it to `~/.claude/skills/review-diff.md`:
+Or ask Claude: **"use /review-diff to review changes"**.
 
-````markdown
----
-name: review-diff
-description: >
-  Present a git diff to the user for inline annotation via the review-plan UI.
-  Use when you want to review code changes before committing or requesting review.
----
+### walkthrough
 
-You are presenting a git diff for human review using the review-plan CLI.
+Rather than reviewing code, this skill is for *understanding* it. Claude
+analyses the diff, structures the changes into logical steps with explanations
+of the *why*, and opens the result in the review UI. You read at your own pace,
+leave questions as inline comments, and Claude answers them when you click Done.
 
-## Steps
+```
+/walkthrough
+```
 
-1. Get the diff you want to review (e.g. `git diff`).
-2. Run the CLI, piping the diff to stdin:
-   ```
-   git diff | review-plan diff --title "<short task-specific title>" --theme <dark|light>
-   ```
-   Use `--theme light` unless the user has expressed a preference for dark mode.
-3. Wait for the CLI to exit. It blocks until the user clicks Done.
-4. If the CLI prints nothing to stdout, the user had no comments.
-5. If the CLI prints annotated output, read each comment carefully and address it in code.
-````
+Or ask Claude: **"walk me through what you just wrote"**.
 
-Then ask Claude: **"use /review-diff to review changes"** — or invoke it directly with `/review-diff`.
+The flow:
+
+```
+agent writes code → /walkthrough → agent generates explanation →
+browser opens → you read + leave questions → agent answers in chat
+```
 
 ---
 
