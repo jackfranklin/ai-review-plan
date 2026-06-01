@@ -39,10 +39,10 @@ async function run(): Promise<void> {
       default: "dark" as const,
       describe: "Initial colour theme for the review UI",
     })
-    .option("diff-only", {
+    .option("comments-only", {
       type: "boolean",
       default: false,
-      describe: "Output only the comments summary, omitting the full plan",
+      describe: "Output only the comments summary, omitting the full plan/diff content",
     })
     .help()
     .parseAsync();
@@ -110,7 +110,7 @@ async function run(): Promise<void> {
     process.exit(0);
   }
 
-  process.stdout.write(formatOutput(planContent, comments, argv["diff-only"]));
+  process.stdout.write(formatOutput(planContent, comments, argv["comments-only"]));
   process.exit(0);
 }
 
