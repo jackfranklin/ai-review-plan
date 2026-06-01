@@ -19,3 +19,11 @@ index abcdef1..7654321 100644
    display: flex;
 +  flex-direction: column;
  }
+diff --git a/src/ui/deleted.ts b/src/ui/deleted.ts
+deleted file mode 100644
+index e69de29..0000000
+--- a/src/ui/deleted.ts
++++ /dev/null
+@@ -1,2 +0,0 @@
+-console.log("delete me");
+-console.log("me too");

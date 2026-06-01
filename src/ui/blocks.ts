@@ -4,6 +4,8 @@ export interface Block {
   raw: string;
   oldLine?: number;
   newLine?: number;
+  fileName?: string;
+  isDeleted?: boolean;
 }
 
 /**
@@ -77,16 +79,37 @@ export function parseDiff(markdown: string): Block[] {
   let i = 0;
   let oldLine = 0;
   let newLine = 0;
+  let currentFile: string | undefined;
+  let isDeleted = false;
 
   while (i < lines.length) {
     const line = lines[i];
+    
+    if (line.startsWith("diff --git")) {
+      const match = /^diff --git a\/(.*) b\/(.*)$/.exec(line);
+      if (match) {
+        currentFile = match[2];
+      }
+      isDeleted = false;
+    }
+    
+    if (line.startsWith("deleted file mode")) {
+      isDeleted = true;
+    }
+
     const isOldFileLine = line.startsWith("--- a/") || line.startsWith("--- /dev/null");
-    if (isOldFileLine && i + 1 < lines.length && lines[i + 1].startsWith("+++ b/")) {
-      const fileName = lines[i + 1].substring(6);
+    const isNewFileLine = i + 1 < lines.length && (lines[i + 1].startsWith("+++ b/") || lines[i + 1].startsWith("+++ /dev/null"));
+    
+    if (isOldFileLine && isNewFileLine) {
+      const fileName = lines[i + 1] === "+++ /dev/null" ? line.substring(6) : lines[i + 1].substring(6);
+      currentFile = fileName;
+      
       blocks.push({
         startLine: i + 1,
         endLine: i + 2,
-        raw: `File: ${fileName}`,
+        raw: `File: ${currentFile}`,
+        fileName: currentFile,
+        isDeleted: isDeleted,
       });
       i += 2;
       continue;
@@ -100,6 +123,8 @@ export function parseDiff(markdown: string): Block[] {
         startLine: i + 1,
         endLine: i + 1,
         raw: line,
+        fileName: currentFile,
+        isDeleted: isDeleted,
       });
       i++;
       continue;
@@ -111,6 +136,8 @@ export function parseDiff(markdown: string): Block[] {
         endLine: i + 1,
         raw: line,
         newLine: newLine,
+        fileName: currentFile,
+        isDeleted: isDeleted,
       });
       newLine++;
       i++;
@@ -120,6 +147,8 @@ export function parseDiff(markdown: string): Block[] {
         endLine: i + 1,
         raw: line,
         oldLine: oldLine,
+        fileName: currentFile,
+        isDeleted: isDeleted,
       });
       oldLine++;
       i++;
@@ -131,6 +160,8 @@ export function parseDiff(markdown: string): Block[] {
         raw: line,
         oldLine: isHeader ? undefined : oldLine,
         newLine: isHeader ? undefined : newLine,
+        fileName: currentFile,
+        isDeleted: isDeleted,
       });
       if (!isHeader) {
         oldLine++;

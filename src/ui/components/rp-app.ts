@@ -175,7 +175,7 @@ export class RpApp extends LitElement {
   @state() private planTitle = "";
   @state() private showHelp = false;
   @state() private mode = "plan";
-  @state() private files: string[] = [];
+  @state() private files: Array<{ name: string; isDeleted: boolean }> = [];
 
   private get _storageKey(): string {
     return `review-plan:comments:${window.location.port}`;
@@ -224,7 +224,7 @@ export class RpApp extends LitElement {
       this.blocks = parseDiff(data.markdown);
       this.files = this.blocks
         .filter((b) => b.raw.startsWith("File: "))
-        .map((b) => b.raw.substring(6));
+        .map((b) => ({ name: b.raw.substring(6), isDeleted: b.isDeleted || false }));
     } else {
       this.blocks = groupBlocks(data.markdown);
     }
@@ -386,6 +386,48 @@ export class RpApp extends LitElement {
     }
   }
 
+  private get _groupedBlocks() {
+    const groups: Array<{ fileName: string | undefined; isDeleted: boolean; blocks: Block[] }> = [];
+    let currentGroup: { fileName: string | undefined; isDeleted: boolean; blocks: Block[] } | null = null;
+
+    for (const block of this.blocks) {
+      if (!currentGroup || block.fileName !== currentGroup.fileName) {
+        currentGroup = {
+          fileName: block.fileName,
+          isDeleted: block.isDeleted || false,
+          blocks: [block]
+        };
+        groups.push(currentGroup);
+      } else {
+        currentGroup.blocks.push(block);
+      }
+    }
+    return groups;
+  }
+
+  private _renderBlock(block: Block) {
+    const blockComments = this.comments.filter(
+      (c) => c.startLine === block.startLine
+    );
+    const isOpen =
+      this.openCommentLine !== null &&
+      this.openCommentLine >= block.startLine &&
+      this.openCommentLine <= block.endLine;
+    const isHeader = block.raw.startsWith("File: ");
+    return html`
+      <rp-plan-line
+        data-start-line=${block.startLine}
+        class=${isHeader ? "sticky-header" : ""}
+        .block=${block}
+        .comments=${blockComments}
+        ?focused=${this.focusedLine >= block.startLine &&
+          this.focusedLine <= block.endLine}
+        ?commentOpen=${isOpen}
+        .isDiff=${this.mode === "diff"}
+      ></rp-plan-line>
+    `;
+  }
+
   override render() {
     if (this.blocks.length === 0) {
       return html`<p style="color:#888">Loading…</p>`;
@@ -400,7 +442,12 @@ export class RpApp extends LitElement {
                 ${this.files.map(
                   (file) => html`
                     <li>
-                      <a @click=${() => { this._scrollToFile(file); }}>${file}</a>
+                      <a 
+                        @click=${() => { this._scrollToFile(file.name); }}
+                        style="${file.isDeleted ? 'text-decoration: line-through; color: var(--text-muted);' : ''}"
+                      >
+                        ${file.name} ${file.isDeleted ? ' [D]' : ''}
+                      </a>
                     </li>
                   `
                 )}
@@ -416,28 +463,24 @@ export class RpApp extends LitElement {
         @comment-edit=${this._onCommentEdit}
         @comment-delete=${this._onCommentDelete}
       >
-        ${this.blocks.map((block) => {
-          const blockComments = this.comments.filter(
-            (c) => c.startLine === block.startLine
-          );
-          const isOpen =
-            this.openCommentLine !== null &&
-            this.openCommentLine >= block.startLine &&
-            this.openCommentLine <= block.endLine;
-          const isHeader = block.raw.startsWith("File: ");
-          return html`
-            <rp-plan-line
-              data-start-line=${block.startLine}
-              class=${isHeader ? "sticky-header" : ""}
-              .block=${block}
-              .comments=${blockComments}
-              ?focused=${this.focusedLine >= block.startLine &&
-                this.focusedLine <= block.endLine}
-              ?commentOpen=${isOpen}
-              .isDiff=${this.mode === "diff"}
-            ></rp-plan-line>
-          `;
-        })}
+        ${this.mode === "diff"
+          ? this._groupedBlocks.map((group) => {
+              if (!group.fileName) {
+                return group.blocks.map((block) => this._renderBlock(block));
+              }
+              return html`
+                <details ?open=${!group.isDeleted}>
+                  <summary style="display: list-item; cursor: pointer; padding: 0.5rem; background: var(--bg-elevated); border-bottom: 1px solid var(--border);">
+                    <strong style="${group.isDeleted ? 'text-decoration: line-through;' : ''}">File: ${group.fileName}</strong>
+                    ${group.isDeleted ? html`<span style="color: var(--text-muted);"> (deleted)</span>` : ""}
+                  </summary>
+                  <div class="file-content">
+                    ${group.blocks.map((block) => this._renderBlock(block))}
+                  </div>
+                </details>
+              `;
+            })
+          : this.blocks.map((block) => this._renderBlock(block))}
       </div>
       <div class="toolbar">
         ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
