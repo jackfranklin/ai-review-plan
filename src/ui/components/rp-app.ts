@@ -165,6 +165,25 @@ export class RpApp extends LitElement {
       background: var(--bg);
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    details[data-file] {
+      margin-bottom: 1.5rem;
+    }
+    details summary {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      display: list-item;
+      cursor: pointer;
+      padding: 0.5rem 0.75rem;
+      background: var(--bg-elevated);
+      border-bottom: 1px solid var(--border);
+      border-left: 4px solid var(--accent);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      font-weight: bold;
+    }
+    details summary:hover {
+      background: var(--bg-focused);
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -380,7 +399,7 @@ export class RpApp extends LitElement {
   private _scrollToFile(fileName: string) {
     const block = this.blocks.find((b) => b.raw === `File: ${fileName}`);
     if (block) {
-      const el = this.shadowRoot?.querySelector(`rp-plan-line[data-start-line="${String(block.startLine)}"]`);
+      const el = this.shadowRoot?.querySelector(`details[data-file="${fileName}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
       this.focusedLine = block.startLine;
     }
@@ -469,13 +488,15 @@ export class RpApp extends LitElement {
                 return group.blocks.map((block) => this._renderBlock(block));
               }
               return html`
-                <details ?open=${!group.isDeleted}>
-                  <summary style="display: list-item; cursor: pointer; padding: 0.5rem; background: var(--bg-elevated); border-bottom: 1px solid var(--border);">
+                <details ?open=${!group.isDeleted} data-file="${group.fileName || ''}">
+                  <summary>
                     <strong style="${group.isDeleted ? 'text-decoration: line-through;' : ''}">File: ${group.fileName}</strong>
                     ${group.isDeleted ? html`<span style="color: var(--text-muted);"> (deleted)</span>` : ""}
                   </summary>
                   <div class="file-content">
-                    ${group.blocks.map((block) => this._renderBlock(block))}
+                    ${group.blocks
+                      .filter((block) => !block.raw.startsWith("File: "))
+                      .map((block) => this._renderBlock(block))}
                   </div>
                 </details>
               `;
