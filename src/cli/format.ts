@@ -3,10 +3,21 @@ import type { Comment } from "../server/server.js";
 export function formatOutput(content: string, comments: Comment[], diffOnly = false): string {
   const annotated: string[] = ["<!-- review-plan output -->", ""];
 
+  const general = comments.filter((c) => c.startLine === 0);
+  const lineSpecific = comments.filter((c) => c.startLine !== 0);
+
+  if (general.length > 0) {
+    annotated.push("## General Comments", "");
+    for (const c of general) {
+      annotated.push(`- ${c.text}`);
+    }
+    annotated.push("");
+  }
+
   if (!diffOnly) {
     const lines = content.split("\n");
     const commentsByLine = new Map<number, Comment[]>();
-    for (const c of comments) {
+    for (const c of lineSpecific) {
       const existing = commentsByLine.get(c.startLine) ?? [];
       existing.push(c);
       commentsByLine.set(c.startLine, existing);
@@ -35,7 +46,7 @@ export function formatOutput(content: string, comments: Comment[], diffOnly = fa
   annotated.push("| Lines | Comment |");
   annotated.push("|-------|---------|");
 
-  const sorted = [...comments].sort((a, b) => a.startLine - b.startLine);
+  const sorted = [...lineSpecific].sort((a, b) => a.startLine - b.startLine);
   for (const c of sorted) {
     const label =
       c.startLine === c.endLine ? String(c.startLine) : `${String(c.startLine)}–${String(c.endLine)}`;

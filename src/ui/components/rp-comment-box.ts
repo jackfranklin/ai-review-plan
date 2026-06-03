@@ -1,5 +1,5 @@
 import { LitElement, html, css } from "lit";
-import { customElement, property } from "lit/decorators.js";
+import { customElement, property, state } from "lit/decorators.js";
 
 @customElement("rp-comment-box")
 export class RpCommentBox extends LitElement {
@@ -56,8 +56,15 @@ export class RpCommentBox extends LitElement {
 
   @property({ type: Number }) startLine = 0;
   @property({ type: Number }) endLine = 0;
+  @property({ type: String }) text = "";
 
-  private _text = "";
+  @state() private _text = "";
+
+  override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
+    if (changedProperties.has("text")) {
+      this._text = this.text;
+    }
+  }
 
   private _onKeydown = (e: KeyboardEvent): void => {
     if (e.key === "Escape") {

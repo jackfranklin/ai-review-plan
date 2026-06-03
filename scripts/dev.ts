@@ -26,8 +26,10 @@ void waitForSubmit().then((comments) => {
     console.log(`\n[submit] ${comments.length} comment(s):`);
     for (const c of comments) {
       const label =
-        c.startLine === c.endLine ? `${c.startLine}` : `${c.startLine}–${c.endLine}`;
-      console.log(`  line ${label}: ${c.text}`);
+        c.startLine === 0
+          ? "General"
+          : `line ${c.startLine === c.endLine ? String(c.startLine) : `${String(c.startLine)}–${String(c.endLine)}`}`;
+      console.log(`  ${label}: ${c.text}`);
     }
   }
   console.log("\n[dev] Reload the page to review again.");

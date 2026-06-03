@@ -73,10 +73,15 @@ export class RpCommentThread extends LitElement {
 
   override render() {
     const { startLine, endLine } = this.comment;
-    const lineLabel = startLine === endLine ? `line ${String(startLine)}` : `lines ${String(startLine)}–${String(endLine)}`;
+    const isGeneral = startLine === 0;
+    const headerText = isGeneral
+      ? "General Comment"
+      : startLine === endLine
+      ? `Comment on line ${String(startLine)}`
+      : `Comment on lines ${String(startLine)}–${String(endLine)}`;
     return html`
       <div class="thread">
-        <div class="header">Comment on ${lineLabel}</div>
+        <div class="header">${headerText}</div>
         <div class="body">
           <span class="text">${this.comment.text}</span>
           <div class="actions">

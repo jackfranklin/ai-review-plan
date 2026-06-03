@@ -127,6 +127,7 @@ export class RpPlanLine extends LitElement {
   @property({ type: Boolean }) focused = false;
   @property({ type: Boolean }) commentOpen = false;
   @property({ type: Boolean }) isDiff = false;
+  @property({ type: String }) commentText = "";
 
   private _onGutterClick() {
     this.dispatchEvent(
@@ -205,6 +206,7 @@ export class RpPlanLine extends LitElement {
         ? html`<rp-comment-box
             .startLine=${this.block.startLine}
             .endLine=${this.block.endLine}
+            .text=${this.commentText}
           ></rp-comment-box>`
         : ""}
       ${this.comments.map(

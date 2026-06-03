@@ -50,4 +50,16 @@ describe("formatOutput", () => {
     expect(result).toContain("## Comment Summary");
     expect(result).toContain("| 1 | Needs detail |");
   });
+
+  it("formats general comments in a dedicated section and excludes them from summary table/inline comments", () => {
+    const result = formatOutput("Line 1\nLine 2", [
+      { startLine: 0, endLine: 0, text: "Overall good plan" },
+      { startLine: 1, endLine: 1, text: "Needs detail" },
+    ]);
+    expect(result).toContain("## General Comments\n\n- Overall good plan\n");
+    expect(result).toContain("> **Comment (line 1):** Needs detail");
+    expect(result).not.toContain("> **Comment (line 0):** Overall good plan");
+    expect(result).toContain("| 1 | Needs detail |");
+    expect(result).not.toContain("| 0 | Overall good plan |");
+  });
 });
