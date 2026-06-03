@@ -221,31 +221,32 @@ export class RpApp extends LitElement {
     .general-comments-header button:hover {
       color: var(--text);
     }
-    .general-comments-list {
+    .general-comments-body {
+      padding: 0.8rem;
+      display: flex;
+      flex-direction: column;
       flex: 1;
-      overflow-y: auto;
-      padding: 0.5rem;
+      background: var(--bg-raised);
+      border-bottom-left-radius: 6px;
+      border-bottom-right-radius: 6px;
     }
-    .general-comments-footer {
-      padding: 0.6rem;
-      border-top: 1px solid var(--border);
-      background: var(--bg-elevated);
-      border-bottom-left-radius: 5px;
-      border-bottom-right-radius: 5px;
-    }
-    .general-comments-add-btn {
+    .general-comments-body textarea {
       width: 100%;
-      padding: 0.4rem;
-      background: var(--accent);
-      color: var(--accent-text);
-      border: none;
+      height: 140px;
+      resize: vertical;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 4px;
-      cursor: pointer;
-      font-size: 0.9em;
-      font-weight: 600;
+      padding: 0.6rem;
+      font-family: inherit;
+      font-size: 0.95rem;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color 0.15s ease;
     }
-    .general-comments-add-btn:hover {
-      background: var(--accent-hover);
+    .general-comments-body textarea:focus {
+      border-color: var(--accent);
     }
     .floating-toggle {
       position: fixed;
@@ -281,9 +282,28 @@ export class RpApp extends LitElement {
   @state() private editingCommentText = "";
   @state() private showGeneralComments = false;
 
-  private get _generalComments(): Comment[] {
-    return this.comments.filter((c) => c.startLine === 0);
+  private get _generalCommentText(): string {
+    const gc = this.comments.find((c) => c.startLine === 0);
+    return gc ? gc.text : "";
   }
+
+  private _onGeneralCommentInput = (e: Event): void => {
+    const val = (e.target as HTMLTextAreaElement).value;
+    const gcIndex = this.comments.findIndex((c) => c.startLine === 0);
+    if (val.trim() === "") {
+      if (gcIndex !== -1) {
+        this.comments = this.comments.filter((_, idx) => idx !== gcIndex);
+      }
+    } else {
+      if (gcIndex !== -1) {
+        this.comments = this.comments.map((c, idx) =>
+          idx === gcIndex ? { ...c, text: val } : c
+        );
+      } else {
+        this.comments = [...this.comments, { startLine: 0, endLine: 0, text: val }];
+      }
+    }
+  };
 
   private get _storageKey(): string {
     return `review-plan:comments:${window.location.port}`;
@@ -360,6 +380,7 @@ export class RpApp extends LitElement {
 
     if (e.key === "Escape") {
       if (this.showHelp) { this.showHelp = false; return; }
+      if (this.showGeneralComments) { this.showGeneralComments = false; return; }
       this.openCommentLine = null;
       this.editingCommentText = "";
       return;
@@ -620,48 +641,25 @@ export class RpApp extends LitElement {
         ? html`
             <div class="general-comments-panel">
               <div class="general-comments-header">
-                <span>General Comments</span>
+                <span>General Comment</span>
                 <button @click=${() => { this.showGeneralComments = false; }}>×</button>
               </div>
-              <div class="general-comments-list">
-                ${this._generalComments.map(
-                  (c) => html`
-                    <rp-comment-thread
-                      .comment=${c}
-                      @comment-edit=${this._onCommentEdit}
-                      @comment-delete=${this._onCommentDelete}
-                    ></rp-comment-thread>
-                  `
-                )}
-                ${this._generalComments.length === 0 && this.openCommentLine !== 0
-                  ? html`<p style="color: var(--text-muted); font-size: 0.9em; margin: 0.5rem; text-align: center;">No general comments yet.</p>`
-                  : ""}
-              </div>
-              <div class="general-comments-footer">
-                ${this.openCommentLine === 0
-                  ? html`
-                      <rp-comment-box
-                        .startLine=${0}
-                        .endLine=${0}
-                        .text=${this.editingCommentText}
-                        @comment-save=${this._onCommentSave}
-                        @comment-cancel=${this._onCommentCancel}
-                      ></rp-comment-box>
-                    `
-                  : html`
-                      <button
-                        class="general-comments-add-btn"
-                        @click=${() => { this.openCommentLine = 0; }}
-                      >
-                        + Add General Comment
-                      </button>
-                    `}
+              <div class="general-comments-body">
+                <textarea
+                  autofocus
+                  placeholder="Enter general comments here..."
+                  .value=${this._generalCommentText}
+                  @input=${this._onGeneralCommentInput}
+                ></textarea>
+                <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; text-align: right;">
+                  Saved automatically
+                </span>
               </div>
             </div>
           `
         : html`
             <button class="floating-toggle" @click=${() => { this.showGeneralComments = true; }}>
-              💬 General Comments (${this._generalComments.length})
+              💬 General Comment${this._generalCommentText ? " (1)" : ""}
             </button>
           `}
       ${this.showHelp ? this._renderHelp() : ""}
