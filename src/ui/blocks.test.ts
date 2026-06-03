@@ -32,10 +32,10 @@ describe("groupBlocks", () => {
     }
   });
 
-  it("treats a 4-space-indented line as a plain block, not a fence", () => {
-    const blocks = groupBlocks("    ```\nline");
-    expect(blocks).toHaveLength(2);
-    expect(blocks[0].startLine).toBe(blocks[0].endLine);
+  it("groups a 4-space-indented fence", () => {
+    const blocks = groupBlocks("    ```\n    code\n    ```");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({ startLine: 1, endLine: 3 });
   });
 
   it("uses longer fence as opening and requires same length to close", () => {
@@ -56,9 +56,9 @@ describe("parseLineIndent", () => {
     expect(result).toEqual({ raw: "- item", indent: 4 });
   });
 
-  it("does not trim fenced code blocks", () => {
-    const result = parseLineIndent("  ```ts");
-    expect(result).toEqual({ raw: "  ```ts", indent: 0 });
+  it("trims fenced code blocks and returns their indent", () => {
+    const result = parseLineIndent("  ```ts\n  code\n  ```");
+    expect(result).toEqual({ raw: "```ts\ncode\n```", indent: 2 });
   });
 
   it("handles lines with only spaces", () => {

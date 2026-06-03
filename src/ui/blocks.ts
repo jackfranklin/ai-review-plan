@@ -23,15 +23,15 @@ export function groupBlocks(markdown: string): Block[] {
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block: ``` or ~~~ with up to 3 spaces of leading indentation
-    const fenceMatch = /^( {0,3})(`{3,}|~{3,})/.exec(line);
+    // Fenced code block: ``` or ~~~ with any leading indentation
+    const fenceMatch = /^( *)(`{3,}|~{3,})/.exec(line);
     if (fenceMatch) {
       const fenceChar = fenceMatch[2][0];
       const fenceLen = fenceMatch[2].length;
       const start = i;
       i++;
       while (i < lines.length) {
-        const closing = /^( {0,3})(`{3,}|~{3,})/.exec(lines[i]);
+        const closing = /^( *)(`{3,}|~{3,})/.exec(lines[i]);
         if (closing && closing[2][0] === fenceChar && closing[2].length >= fenceLen) {
           i++; // include closing fence
           break;
@@ -59,15 +59,32 @@ export function groupBlocks(markdown: string): Block[] {
 }
 
 export function parseLineIndent(raw: string): { raw: string; indent: number } {
-  let indent = 0;
-  const isFenced = /^( {0,3})(`{3,}|~{3,})/.test(raw);
+  const fenceMatch = /^( *)(`{3,}|~{3,})/.exec(raw);
   
-  if (!isFenced) {
-    const match = /^\s+/.exec(raw);
-    indent = match ? match[0].length : 0;
+  if (fenceMatch) {
+    const indent = fenceMatch[1].length;
     if (indent > 0) {
-      raw = raw.trimStart();
+      const lines = raw.split("\n");
+      const strippedLines = lines.map(line => {
+        if (line.startsWith(" ".repeat(indent))) {
+          return line.substring(indent);
+        }
+        const spaces = /^\s*/.exec(line)?.[0].length ?? 0;
+        return line.substring(spaces);
+      });
+      return {
+        raw: strippedLines.join("\n"),
+        indent
+      };
     }
+    return { raw, indent: 0 };
+  }
+
+  let indent = 0;
+  const match = /^\s+/.exec(raw);
+  indent = match ? match[0].length : 0;
+  if (indent > 0) {
+    raw = raw.trimStart();
   }
   
   return { raw, indent };
