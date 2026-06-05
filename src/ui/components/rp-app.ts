@@ -10,9 +10,21 @@ export class RpApp extends LitElement {
   static styles = css`
     :host {
       display: block;
-      max-width: 1100px;
+      max-width: 1280px;
       margin: 0 auto;
       padding: 2rem 2rem 6rem;
+    }
+    .layout-container {
+      display: flex;
+      gap: 2rem;
+      align-items: flex-start;
+      justify-content: center;
+      width: 100%;
+    }
+    .review-content {
+      flex: 1;
+      min-width: 0;
+      max-width: 1000px;
     }
     .toolbar {
       position: fixed;
@@ -121,22 +133,63 @@ export class RpApp extends LitElement {
       line-height: 1.4;
     }
     .file-nav {
-      position: fixed;
-      top: 1rem;
-      left: 1rem;
+      position: sticky;
+      top: 2rem;
       background: var(--bg-raised);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 0.5rem;
-      max-width: 250px;
+      padding: 1rem;
+      width: 260px;
+      max-height: calc(100vh - 10rem);
+      overflow-y: auto;
       z-index: 20;
       font-size: 0.85em;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      flex-shrink: 0;
     }
-    .file-nav h3 {
-      margin: 0 0 0.3rem;
+    .file-nav-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+    }
+    .file-nav-header h3 {
+      margin: 0;
       font-size: 0.9em;
       color: var(--heading);
+    }
+    .toggle-sidebar {
+      background: transparent;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 1.1em;
+      padding: 0.2rem;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      line-height: 1;
+    }
+    .toggle-sidebar:hover {
+      color: var(--text);
+      background: var(--bg-elevated);
+    }
+    .toggle-sidebar-expand {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.4rem 0.8rem;
+      color: var(--text);
+      cursor: pointer;
+      font-size: 0.85em;
+      margin-bottom: 1rem;
+    }
+    .toggle-sidebar-expand:hover {
+      background: var(--bg-elevated);
     }
     .file-nav ul {
       list-style: none;
@@ -157,6 +210,16 @@ export class RpApp extends LitElement {
     }
     .file-nav a:hover {
       text-decoration: underline;
+    }
+    @media (max-width: 768px) {
+      .layout-container {
+        flex-direction: column;
+      }
+      .file-nav {
+        position: static;
+        width: 100%;
+        max-height: 200px;
+      }
     }
     rp-plan-line.sticky-header {
       position: sticky;
@@ -281,6 +344,7 @@ export class RpApp extends LitElement {
   @state() private files: Array<{ name: string; isDeleted: boolean }> = [];
   @state() private editingCommentText = "";
   @state() private showGeneralComments = false;
+  @state() private sidebarCollapsed = false;
 
   private get _generalCommentText(): string {
     const gc = this.comments.find((c) => c.startLine === 0);
@@ -309,11 +373,18 @@ export class RpApp extends LitElement {
     return `review-plan:comments:${window.location.port}`;
   }
 
+  private readonly _toggleSidebar = (): void => {
+    this.sidebarCollapsed = !this.sidebarCollapsed;
+    localStorage.setItem("review-plan:sidebar-collapsed", String(this.sidebarCollapsed));
+  };
+
   override connectedCallback(): void {
     super.connectedCallback();
     void this._fetchPlan();
     window.addEventListener("keydown", this._onKeydown);
     window.addEventListener("beforeunload", this._onBeforeUnload);
+    const collapsed = localStorage.getItem("review-plan:sidebar-collapsed");
+    this.sidebarCollapsed = collapsed === "true";
   }
 
   override disconnectedCallback(): void {
@@ -570,55 +641,66 @@ export class RpApp extends LitElement {
     }
 
     return html`
-      ${this.mode === "diff" && this.files.length > 0
-        ? html`
-            <div class="file-nav">
-              <h3>Files</h3>
-              <ul>
-                ${this.files.map(
-                  (file) => html`
-                    <li>
-                      <a 
-                        @click=${() => { this._scrollToFile(file.name); }}
-                        style="${file.isDeleted ? 'text-decoration: line-through; color: var(--text-muted);' : ''}"
-                      >
-                        ${file.name} ${file.isDeleted ? ' [D]' : ''}
-                      </a>
-                    </li>
-                  `
-                )}
-              </ul>
-            </div>
-          `
-        : ""}
-      <div
-        @request-comment=${this._onRequestComment}
-        @line-focus=${this._onLineFocus}
-        @comment-save=${this._onCommentSave}
-        @comment-cancel=${this._onCommentCancel}
-        @comment-edit=${this._onCommentEdit}
-        @comment-delete=${this._onCommentDelete}
-      >
-        ${this.mode === "diff"
-          ? this._groupedBlocks.map((group) => {
-              if (!group.fileName) {
-                return group.blocks.map((block) => this._renderBlock(block));
-              }
-              return html`
-                <details ?open=${!group.isDeleted} data-file="${group.fileName || ''}">
-                  <summary>
-                    <strong style="${group.isDeleted ? 'text-decoration: line-through;' : ''}">File: ${group.fileName}</strong>
-                    ${group.isDeleted ? html`<span style="color: var(--text-muted);"> (deleted)</span>` : ""}
-                  </summary>
-                  <div class="file-content">
-                    ${group.blocks
-                      .filter((block) => !block.raw.startsWith("File: "))
-                      .map((block) => this._renderBlock(block))}
-                  </div>
-                </details>
-              `;
-            })
-          : this.blocks.map((block) => this._renderBlock(block))}
+      <div class="layout-container">
+        ${this.mode === "diff" && this.files.length > 0 && !this.sidebarCollapsed
+          ? html`
+              <div class="file-nav">
+                <div class="file-nav-header">
+                  <h3>Files</h3>
+                  <button class="toggle-sidebar" @click=${this._toggleSidebar} title="Collapse sidebar">◂</button>
+                </div>
+                <ul>
+                  ${this.files.map(
+                    (file) => html`
+                      <li>
+                        <a 
+                          @click=${() => { this._scrollToFile(file.name); }}
+                          style="${file.isDeleted ? 'text-decoration: line-through; color: var(--text-muted);' : ''}"
+                        >
+                          ${file.name} ${file.isDeleted ? ' [D]' : ''}
+                        </a>
+                      </li>
+                    `
+                  )}
+                </ul>
+              </div>
+            `
+          : ""}
+        <div
+          class="review-content"
+          @request-comment=${this._onRequestComment}
+          @line-focus=${this._onLineFocus}
+          @comment-save=${this._onCommentSave}
+          @comment-cancel=${this._onCommentCancel}
+          @comment-edit=${this._onCommentEdit}
+          @comment-delete=${this._onCommentDelete}
+        >
+          ${this.mode === "diff" && this.files.length > 0 && this.sidebarCollapsed
+            ? html`
+                <button class="toggle-sidebar-expand" @click=${this._toggleSidebar} title="Expand sidebar">📂 Files</button>
+              `
+            : ""}
+          ${this.mode === "diff"
+            ? this._groupedBlocks.map((group) => {
+                if (!group.fileName) {
+                  return group.blocks.map((block) => this._renderBlock(block));
+                }
+                return html`
+                  <details ?open=${!group.isDeleted} data-file="${group.fileName || ''}">
+                    <summary>
+                      <strong style="${group.isDeleted ? 'text-decoration: line-through;' : ''}">File: ${group.fileName}</strong>
+                      ${group.isDeleted ? html`<span style="color: var(--text-muted);"> (deleted)</span>` : ""}
+                    </summary>
+                    <div class="file-content">
+                      ${group.blocks
+                        .filter((block) => !block.raw.startsWith("File: "))
+                        .map((block) => this._renderBlock(block))}
+                    </div>
+                  </details>
+                `;
+              })
+            : this.blocks.map((block) => this._renderBlock(block))}
+        </div>
       </div>
       <div class="toolbar">
         ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
