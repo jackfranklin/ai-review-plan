@@ -1,22 +1,28 @@
-# review-plan
+# ai-review
 
 Reviewing an AI-generated plan in the terminal means reading a wall of text and
-typing feedback into the chat. `review-plan` opens the plan in your browser so
+typing feedback into the chat. `ai-review` opens the plan in your browser so
 you can annotate specific lines inline. Your comments are returned to the agent
 so it can revise before acting.
+
+---
+
+## Prerequisites
+
+- Node.js 18 or later
 
 ---
 
 ## Install
 
 ```bash
-npm install -g review-plan
+npm install -g @jackfranklin/ai-review
 ```
 
 Or run without installing:
 
 ```bash
-npx review-plan plan.md
+npx @jackfranklin/ai-review plan.md
 ```
 
 ---
@@ -24,7 +30,7 @@ npx review-plan plan.md
 ## How it works
 
 ```
-agent writes plan → review-plan opens browser → you annotate → agent revises → agent acts
+agent writes plan → ai-review opens browser → you annotate → agent revises → agent acts
 ```
 
 The CLI starts a local server, opens the browser, and blocks until you click
@@ -34,11 +40,10 @@ and the agent proceeds as planned.
 
 ---
 
-## Use with Claude Code
+## Use with an AI agent
 
-Three ready-made skills live in the [`skills/`](./skills) folder of this
-repository. Copy the ones you want to `~/.claude/skills/` and Claude will pick
-them up automatically.
+Three ready-made skills live in the [`skills/`](./skills) folder. Set them up
+with your agent of choice to invoke them from your AI chat.
 
 | Skill | File | Invoke with |
 |-------|------|-------------|
@@ -46,45 +51,40 @@ them up automatically.
 | Review a diff before committing | [`skills/review-diff.md`](./skills/review-diff.md) | `/review-diff` |
 | Walkthrough of AI-written code | [`skills/walkthrough.md`](./skills/walkthrough.md) | `/walkthrough` |
 
-```bash
-# Install all three
-cp skills/*.md ~/.claude/skills/
-```
-
 ### review-plan
 
-Tells Claude to pause before executing any multi-step plan, open the review UI,
+Tells the agent to pause before executing any multi-step plan, open the review UI,
 and revise based on your comments before acting.
 
 ```
 /review-plan
 ```
 
-Or ask Claude: **"use /review-plan before you start"**.
+Or ask your agent: **"use /review-plan before you start"**.
 
 ### review-diff
 
-Tells Claude to pipe the current diff into the review UI so you can annotate
+Tells the agent to pipe the current diff into the review UI so you can annotate
 changes before they are committed or pushed.
 
 ```
 /review-diff
 ```
 
-Or ask Claude: **"use /review-diff to review changes"**.
+Or ask your agent: **"use /review-diff to review changes"**.
 
 ### walkthrough
 
-Rather than reviewing code, this skill is for *understanding* it. Claude
+Rather than reviewing code, this skill is for *understanding* it. The agent
 analyses the diff, structures the changes into logical steps with explanations
 of the *why*, and opens the result in the review UI. You read at your own pace,
-leave questions as inline comments, and Claude answers them when you click Done.
+leave questions as inline comments, and the agent answers them when you click Done.
 
 ```
 /walkthrough
 ```
 
-Or ask Claude: **"walk me through what you just wrote"**.
+Or ask your agent: **"walk me through what you just wrote"**.
 
 The flow:
 
@@ -97,29 +97,29 @@ browser opens → you read + leave questions → agent answers in chat
 
 ## Use from the command line
 
-`review-plan` is also useful on its own, independently of any AI agent — for
+`ai-review` is also useful on its own, independently of any AI agent — for
 reviewing a plan written by hand, or for integrating into your own tooling.
 
 ```bash
 # Review a plan file
-review-plan plan plan.md
+ai-review plan plan.md
 
 # Pipe plan from stdin
-echo "$PLAN" | review-plan plan
+echo "$PLAN" | ai-review plan
 
 # Review a git diff
-git diff | review-plan diff
+git diff | ai-review diff
 
 # With a title
-review-plan plan --title "Auth refactor" plan.md
-git diff | review-plan diff --title "Current Changes"
+ai-review plan --title "Auth refactor" plan.md
+git diff | ai-review diff --title "Current Changes"
 
 # Light or dark theme
-review-plan plan --theme light plan.md
-review-plan plan --theme dark plan.md
+ai-review plan --theme light plan.md
+ai-review plan --theme dark plan.md
 
 # Token-efficient mode for AI agents (omits full plan from output)
-review-plan plan --diff-only plan.md
+ai-review plan --diff-only plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.
@@ -135,7 +135,7 @@ Press **?** in the UI to see all keyboard shortcuts.
 When you leave comments, the CLI prints:
 
 ```markdown
-<!-- review-plan output -->
+<!-- ai-review output -->
 
 ## Annotated Plan
 

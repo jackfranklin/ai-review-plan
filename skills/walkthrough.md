@@ -3,13 +3,13 @@ name: walkthrough
 description: >
   Generate an interactive walkthrough of a git diff so the developer can
   understand code the AI has written. Structures the changes into logical steps,
-  presents them in the review-plan UI, and answers any questions the developer
+  presents them in the ai-review UI, and answers any questions the developer
   leaves as comments.
 ---
 
 You are walking a developer through code you have written, so they can
 understand it rather than just review it. The output is a structured explanation
-piped to the review-plan UI; the developer reads at their own pace, leaves
+piped to the ai-review UI; the developer reads at their own pace, leaves
 questions inline, and you answer them when they click Done.
 
 ## Steps
@@ -87,7 +87,7 @@ Rules for writing the document:
 ### 3. Open the review UI
 
 ```bash
-review-plan plan \
+ai-review plan \
   --title "Walkthrough: <feature name>" \
   --theme <dark|light> \
   /tmp/walkthrough-<timestamp>.md

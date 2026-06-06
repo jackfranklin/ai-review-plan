@@ -1,11 +1,11 @@
 ---
 name: review-diff
 description: >
-  Present a git diff to the user for inline annotation via the review-plan UI.
+  Present a git diff to the user for inline annotation via the ai-review UI.
   Use when you want to review code changes before committing or requesting review.
 ---
 
-You are presenting a git diff for human review using the review-plan CLI.
+You are presenting a git diff for human review using the ai-review CLI.
 
 ## Steps
 
@@ -15,7 +15,7 @@ You are presenting a git diff for human review using the review-plan CLI.
    **Note**: Run `git add -N .` first to include untracked files in the diff. This records the intent to add the files, making them visible to `git diff` without fully staging them.
 2. Run the CLI, piping the diff to stdin:
    ```
-   git diff HEAD | review-plan diff --comments-only --title "<short task-specific title>" --theme <dark|light>
+   git diff HEAD | ai-review diff --comments-only --title "<short task-specific title>" --theme <dark|light>
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
    Always pass `--comments-only` — the diff is already in your context, so echoing it back wastes tokens.

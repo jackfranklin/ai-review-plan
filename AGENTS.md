@@ -1,4 +1,4 @@
-# AGENTS.md — review-plan
+# AGENTS.md — ai-review
 
 Guidelines for AI agents working in this repository.
 
@@ -6,7 +6,7 @@ Guidelines for AI agents working in this repository.
 
 ## Project overview
 
-`review-plan` is a Node.js CLI + Lit web UI. The CLI starts a local HTTP server,
+`ai-review` is a Node.js CLI + Lit web UI. The CLI starts a local HTTP server,
 opens the browser, waits for the user to annotate a markdown plan or a git diff, then prints
 annotated output to stdout. It is itself a tool used by AI agents (via the
 Claude Code skill) to solicit human feedback mid-task.
@@ -151,7 +151,7 @@ not designed to handle concurrent requests or multiple submit calls.
 stdout when comments exist:
 
 ```
-<!-- review-plan output -->
+<!-- ai-review output -->
 
 ## Annotated Plan
 

@@ -4,7 +4,7 @@ import { formatOutput } from "./format.js";
 describe("formatOutput", () => {
   it("includes the output header and section headings", () => {
     const result = formatOutput("# Plan\n\nStep 1", []);
-    expect(result).toContain("<!-- review-plan output -->");
+    expect(result).toContain("<!-- ai-review output -->");
     expect(result).toContain("## Annotated Plan");
     expect(result).toContain("## Comment Summary");
   });
@@ -44,7 +44,7 @@ describe("formatOutput", () => {
     const result = formatOutput("Line 1\nLine 2", [
       { startLine: 1, endLine: 1, text: "Needs detail" },
     ], true);
-    expect(result).toContain("<!-- review-plan output -->");
+    expect(result).toContain("<!-- ai-review output -->");
     expect(result).not.toContain("## Annotated Plan");
     expect(result).not.toContain("Line 1");
     expect(result).toContain("## Comment Summary");

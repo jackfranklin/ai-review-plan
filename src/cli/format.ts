@@ -1,7 +1,7 @@
 import type { Comment } from "../server/server.js";
 
 export function formatOutput(content: string, comments: Comment[], diffOnly = false): string {
-  const annotated: string[] = ["<!-- review-plan output -->", ""];
+  const annotated: string[] = ["<!-- ai-review output -->", ""];
 
   const general = comments.filter((c) => c.startLine === 0);
   const lineSpecific = comments.filter((c) => c.startLine !== 0);

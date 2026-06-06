@@ -11,7 +11,7 @@ import { hideBin } from "yargs/helpers";
 
 async function run(): Promise<void> {
   const argv = await yargs(hideBin(process.argv))
-    .usage("Usage: review-plan <command> [options]")
+    .usage("Usage: ai-review <command> [options]")
     .command("plan [file]", "Review a markdown plan", (yargs) => {
       return yargs.positional("file", {
         describe: "Plan markdown file (reads stdin if omitted)",
@@ -61,7 +61,7 @@ async function run(): Promise<void> {
     if (fileArg) {
       planPath = path.resolve(fileArg);
       if (!fs.existsSync(planPath)) {
-        process.stderr.write(`review-plan: file not found: ${planPath}\n`);
+        process.stderr.write(`ai-review: file not found: ${planPath}\n`);
         process.exit(1);
       }
     } else {
@@ -77,7 +77,7 @@ async function run(): Promise<void> {
     fs.writeFileSync(tmpFile, content);
     planPath = tmpFile;
   } else {
-    process.stderr.write(`review-plan: unknown command: ${command}\n`);
+    process.stderr.write(`ai-review: unknown command: ${command}\n`);
     process.exit(1);
   }
 
@@ -115,6 +115,6 @@ async function run(): Promise<void> {
 }
 
 run().catch((err: unknown) => {
-  process.stderr.write(`review-plan: ${String(err)}\n`);
+  process.stderr.write(`ai-review: ${String(err)}\n`);
   process.exit(1);
 });

@@ -1,12 +1,12 @@
 ---
 name: review-plan
 description: >
-  Present a plan to the user for inline annotation via the review-plan UI.
+  Present a plan to the user for inline annotation via the ai-review UI.
   Use when you have a plan ready for human review before executing it.
   The user will annotate it in the browser; you then revise based on their comments.
 ---
 
-You are presenting a plan for human review using the review-plan CLI.
+You are presenting a plan for human review using the ai-review CLI.
 
 ## Steps
 
@@ -15,7 +15,7 @@ You are presenting a plan for human review using the review-plan CLI.
    and specific to the current task — the user may have multiple review tabs open
    at once and needs to tell them apart at a glance:
    ```
-   review-plan plan --comments-only --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
+   ai-review plan --comments-only --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
    Always pass `--comments-only` — the plan is already in your context, so echoing it back wastes tokens.

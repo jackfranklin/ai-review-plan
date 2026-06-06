@@ -19,13 +19,16 @@ fs.writeFileSync(uiHtmlTs, `export const UI_HTML: string | null = \`${escaped}\`
 console.log("3/4  Bundling CLI with esbuild…");
 try {
   const { build } = await import("esbuild");
+  const outfile = path.join(root, "dist/cli.js");
   await build({
     entryPoints: [path.join(root, "src/cli/index.ts")],
     bundle: true,
     platform: "node",
     format: "esm",
-    outfile: path.join(root, "dist/cli.js"),
+    outfile,
+    banner: { js: "#!/usr/bin/env node" },
   });
+  fs.chmodSync(outfile, 0o755);
 } finally {
   // Restore the dev stub so source stays clean
   fs.writeFileSync(uiHtmlTs, original);

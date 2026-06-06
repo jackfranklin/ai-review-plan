@@ -1,5 +1,5 @@
 {
-  "name": "review-plan",
+  "name": "@jackfranklin/ai-review",
   "version": "0.1.0",
   "description": "CLI + local web UI for annotating AI-generated markdown plans",
   "license": "Apache-2.0",
@@ -25,13 +25,14 @@
   ],
   "type": "module",
   "bin": {
-    "review-plan": "dist/cli.js"
+    "ai-review": "dist/cli.js"
   },
   "scripts": {
     "dev": "tsx scripts/dev.ts",
     "dev-plan": "tsx scripts/dev.ts",
     "dev-diff": "tsx scripts/dev.ts --diff",
-    "build": "tsx scripts/build.ts",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsx scripts/build.ts",
     "test": "vitest run",
     "lint": "eslint src",
     "typecheck": "tsc -p tsconfig.cli.json --noEmit && tsc -p tsconfig.ui.json --noEmit && tsc -p tsconfig.scripts.json --noEmit",

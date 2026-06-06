@@ -370,12 +370,12 @@ export class RpApp extends LitElement {
   };
 
   private get _storageKey(): string {
-    return `review-plan:comments:${window.location.port}`;
+    return `ai-review:comments:${window.location.port}`;
   }
 
   private readonly _toggleSidebar = (): void => {
     this.sidebarCollapsed = !this.sidebarCollapsed;
-    localStorage.setItem("review-plan:sidebar-collapsed", String(this.sidebarCollapsed));
+    localStorage.setItem("ai-review:sidebar-collapsed", String(this.sidebarCollapsed));
   };
 
   override connectedCallback(): void {
@@ -383,7 +383,7 @@ export class RpApp extends LitElement {
     void this._fetchPlan();
     window.addEventListener("keydown", this._onKeydown);
     window.addEventListener("beforeunload", this._onBeforeUnload);
-    const collapsed = localStorage.getItem("review-plan:sidebar-collapsed");
+    const collapsed = localStorage.getItem("ai-review:sidebar-collapsed");
     this.sidebarCollapsed = collapsed === "true";
   }
 
@@ -431,7 +431,7 @@ export class RpApp extends LitElement {
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
     if (data.title) {
       this.planTitle = data.title;
-      document.title = `review-plan: ${data.title}`;
+      document.title = `ai-review: ${data.title}`;
     }
     this._applyTheme(data.theme ?? "dark");
     const saved = localStorage.getItem(this._storageKey);
