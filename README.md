@@ -5,6 +5,8 @@ typing feedback into the chat. `ai-review` opens the plan in your browser so
 you can annotate specific lines inline. Your comments are returned to the agent
 so it can revise before acting.
 
+![ai-review UI example](./example.png)
+
 ---
 
 ## Prerequisites
