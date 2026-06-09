@@ -1,6 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { groupBlocks, parseDiff } from "../blocks.js";
+import { groupBlocks, parseDiff, groupFilesByDirectory } from "../blocks.js";
 import type { Block } from "../blocks.js";
 import type { Comment } from "../types.js";
 import "./rp-plan-line.js";
@@ -138,10 +138,13 @@ export class RpApp extends LitElement {
       background: var(--bg-raised);
       border: 1px solid var(--border);
       border-radius: 6px;
-      padding: 1rem;
-      width: 260px;
+      padding: 0.75rem;
+      width: 280px;
+      min-width: 200px;
+      max-width: 600px;
+      resize: horizontal;
+      overflow: auto;
       max-height: calc(100vh - 10rem);
-      overflow-y: auto;
       z-index: 20;
       font-size: 0.85em;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
@@ -199,17 +202,47 @@ export class RpApp extends LitElement {
     .file-nav li {
       margin: 0.2rem 0;
     }
-    .file-nav a {
+    .file-group {
+      margin-bottom: 0.75rem;
+    }
+    .file-group-dir {
+      font-size: 0.8em;
+      color: var(--text-muted);
+      font-weight: 600;
+      padding: 0.2rem 0.5rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      direction: rtl;
+      text-align: left;
+    }
+    .file-group-list {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+    }
+    .file-group-list li {
+      margin: 0.1rem 0;
+    }
+    .file-nav a.file-link {
       color: var(--link);
       text-decoration: none;
       cursor: pointer;
       display: block;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      transition: background 0.15s ease;
     }
-    .file-nav a:hover {
-      text-decoration: underline;
+    .file-nav a.file-link:hover {
+      background: var(--bg-elevated);
+      text-decoration: none;
+    }
+    .file-nav a.file-link.deleted {
+      text-decoration: line-through;
+      color: var(--text-muted);
     }
     @media (max-width: 768px) {
       .layout-container {
@@ -219,6 +252,7 @@ export class RpApp extends LitElement {
         position: static;
         width: 100%;
         max-height: 200px;
+        resize: none;
       }
     }
     rp-plan-line.sticky-header {
@@ -349,6 +383,10 @@ export class RpApp extends LitElement {
   private get _generalCommentText(): string {
     const gc = this.comments.find((c) => c.startLine === 0);
     return gc ? gc.text : "";
+  }
+
+  private get _groupedFiles() {
+    return groupFilesByDirectory(this.files);
   }
 
   private _onGeneralCommentInput = (e: Event): void => {
@@ -650,18 +688,24 @@ export class RpApp extends LitElement {
                   <button class="toggle-sidebar" @click=${this._toggleSidebar} title="Collapse sidebar">◂</button>
                 </div>
                 <ul>
-                  ${this.files.map(
-                    (file) => html`
-                      <li>
-                        <a 
-                          @click=${() => { this._scrollToFile(file.name); }}
-                          style="${file.isDeleted ? 'text-decoration: line-through; color: var(--text-muted);' : ''}"
-                        >
-                          ${file.name} ${file.isDeleted ? ' [D]' : ''}
-                        </a>
-                      </li>
-                    `
-                  )}
+                  ${this._groupedFiles.map((group) => html`
+                    <li class="file-group">
+                      ${group.dirPath ? html`<div class="file-group-dir" title="${group.dirPath}">${group.dirPath}</div>` : ""}
+                      <ul class="file-group-list">
+                        ${group.files.map((file) => html`
+                          <li>
+                            <a 
+                              @click=${() => { this._scrollToFile(file.name); }}
+                              title="${file.name}${file.isDeleted ? ' (deleted)' : ''}"
+                              class="file-link ${file.isDeleted ? 'deleted' : ''}"
+                            >
+                              ${file.displayName}${file.isDeleted ? ' [D]' : ''}
+                            </a>
+                          </li>
+                        `)}
+                      </ul>
+                    </li>
+                  `)}
                 </ul>
               </div>
             `

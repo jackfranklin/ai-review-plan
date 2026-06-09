@@ -189,3 +189,48 @@ export function parseDiff(markdown: string): Block[] {
   }
   return blocks;
 }
+
+export interface FileItem {
+  name: string;
+  isDeleted: boolean;
+}
+
+export interface FileGroup {
+  dirPath: string;
+  files: Array<{
+    name: string;
+    isDeleted: boolean;
+    displayName: string;
+  }>;
+}
+
+export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
+  const groupsMap = new Map<string, Array<{ name: string; isDeleted: boolean; displayName: string }>>();
+  for (const file of files) {
+    const lastSlash = file.name.lastIndexOf("/");
+    const dirPath = lastSlash === -1 ? "" : file.name.substring(0, lastSlash);
+    const displayName = lastSlash === -1 ? file.name : file.name.substring(lastSlash + 1);
+
+    let group = groupsMap.get(dirPath);
+    if (!group) {
+      group = [];
+      groupsMap.set(dirPath, group);
+    }
+    group.push({ name: file.name, isDeleted: file.isDeleted, displayName });
+  }
+
+  const groups: FileGroup[] = [];
+  for (const [dirPath, groupFiles] of groupsMap.entries()) {
+    groupFiles.sort((a, b) => a.displayName.localeCompare(b.displayName));
+    groups.push({ dirPath, files: groupFiles });
+  }
+
+  groups.sort((a, b) => {
+    if (a.dirPath === "" && b.dirPath !== "") return 1;
+    if (a.dirPath !== "" && b.dirPath === "") return -1;
+    return a.dirPath.localeCompare(b.dirPath);
+  });
+
+  return groups;
+}
+

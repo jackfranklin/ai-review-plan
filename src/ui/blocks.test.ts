@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupBlocks, parseLineIndent, parseDiff } from "./blocks.js";
+import { groupBlocks, parseLineIndent, parseDiff, groupFilesByDirectory } from "./blocks.js";
 
 describe("groupBlocks", () => {
   it("returns one block per line for plain content", () => {
@@ -123,3 +123,48 @@ describe("parseDiff", () => {
     expect(newLine8).toMatchObject({ newLine: 8 });
   });
 });
+
+describe("groupFilesByDirectory", () => {
+  it("groups and sorts files by directory and filename alphabetically, placing root files at the bottom", () => {
+    const files = [
+      { name: "src/ui/components/rp-plan-line.ts", isDeleted: false },
+      { name: "src/ui/components/rp-app.ts", isDeleted: false },
+      { name: "tsconfig.json", isDeleted: false },
+      { name: "src/ui/types.ts", isDeleted: true },
+      { name: "src/ui/blocks.ts", isDeleted: false },
+      { name: "package.json", isDeleted: false },
+    ];
+
+    const result = groupFilesByDirectory(files);
+
+    expect(result).toHaveLength(3);
+
+    // Group 1: src/ui
+    expect(result[0]).toEqual({
+      dirPath: "src/ui",
+      files: [
+        { name: "src/ui/blocks.ts", isDeleted: false, displayName: "blocks.ts" },
+        { name: "src/ui/types.ts", isDeleted: true, displayName: "types.ts" },
+      ],
+    });
+
+    // Group 2: src/ui/components
+    expect(result[1]).toEqual({
+      dirPath: "src/ui/components",
+      files: [
+        { name: "src/ui/components/rp-app.ts", isDeleted: false, displayName: "rp-app.ts" },
+        { name: "src/ui/components/rp-plan-line.ts", isDeleted: false, displayName: "rp-plan-line.ts" },
+      ],
+    });
+
+    // Group 3: Root level (empty dirPath)
+    expect(result[2]).toEqual({
+      dirPath: "",
+      files: [
+        { name: "package.json", isDeleted: false, displayName: "package.json" },
+        { name: "tsconfig.json", isDeleted: false, displayName: "tsconfig.json" },
+      ],
+    });
+  });
+});
+
