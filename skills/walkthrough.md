@@ -129,3 +129,4 @@ Delete the temp file once the developer confirms they're done.
   confident explanation of the wrong thing.
 - Line numbers should match the post-change state of the file, not the diff
   hunk headers, so the developer can open the file and land on the right line.
+- **Diagrams**: Use Mermaid diagrams (e.g. `sequenceDiagram`, `flowchart TD`, `stateDiagram-v2` in a fenced code block with language `mermaid`) inside your steps when explaining the sequence of events, data structures, or code architecture introduced by the change.

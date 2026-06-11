@@ -80,3 +80,23 @@ document.documentElement.dataset.theme = saved ?? preferred;
 - Preference persists across browser sessions.
 - No regressions on existing light-mode styles.
 - Ships by end of sprint.
+
+---
+
+## Architectural Flow
+
+```mermaid
+sequenceDiagram
+    participant User as User / DevTools UI
+    participant Conv as AiConversation
+    participant Agent as AiAgent2 (Old Instance)
+    participant AgentNew as AiAgent2 (New Instance)
+
+    User->>Conv: Submits Query / Navigates Page
+    Note over Conv: Navigation Detected during execution
+    Conv->>Conv: Discards Agent Instance
+    Note over Agent: Garbage Collected (Caches destroyed)
+    Conv->>AgentNew: Instantiate (Pass filtered history)
+    Conv->>AgentNew: Run turn
+```
+

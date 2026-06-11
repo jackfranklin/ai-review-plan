@@ -6,6 +6,7 @@ import type { Comment } from "../types.js";
 import { parseLineIndent, type Block } from "../blocks.js";
 import "./rp-comment-box.js";
 import "./rp-comment-thread.js";
+import "./rp-mermaid.js";
 
 @customElement("rp-plan-line")
 export class RpPlanLine extends LitElement {
@@ -128,6 +129,7 @@ export class RpPlanLine extends LitElement {
   @property({ type: Boolean }) commentOpen = false;
   @property({ type: Boolean }) isDiff = false;
   @property({ type: String }) commentText = "";
+  @property({ type: String }) theme = "dark";
 
   private _onGutterClick() {
     this.dispatchEvent(
@@ -183,8 +185,18 @@ export class RpPlanLine extends LitElement {
     } else {
       const parsed = parseLineIndent(this.block.raw);
       indent = parsed.indent;
-      const rendered = marked.parse(parsed.raw) as string;
-      contentHtml = html`${unsafeHTML(rendered)}`;
+      if (/^(?:`{3,}|~{3,})mermaid\s*\n/.test(parsed.raw)) {
+        const lines = parsed.raw.split("\n");
+        const contentLines = lines.slice(1);
+        if (contentLines.length > 0 && /^(?:`{3,}|~{3,})/.test(contentLines[contentLines.length - 1])) {
+          contentLines.pop();
+        }
+        const mermaidCode = contentLines.join("\n");
+        contentHtml = html`<rp-mermaid .code=${mermaidCode} .theme=${this.theme}></rp-mermaid>`;
+      } else {
+        const rendered = marked.parse(parsed.raw) as string;
+        contentHtml = html`${unsafeHTML(rendered)}`;
+      }
     }
 
     return html`

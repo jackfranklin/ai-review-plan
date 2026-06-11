@@ -651,6 +651,7 @@ export class RpApp extends LitElement {
         ?commentOpen=${isOpen}
         .commentText=${isOpen ? this.editingCommentText : ""}
         .isDiff=${this.mode === "diff"}
+        .theme=${this.theme}
       ></rp-plan-line>
     `;
   }
