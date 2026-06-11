@@ -7,15 +7,22 @@ export interface Comment {
   text: string;
 }
 
+export type Verdict = "approve" | "reject";
+
+export interface ReviewResult {
+  comments: Comment[];
+  verdict: Verdict;
+}
+
 export function createServer(
   planPath: string,
   uiHtml: string,
   title = "",
   theme = "dark",
   mode = "plan"
-): { server: http.Server; waitForSubmit: () => Promise<Comment[]> } {
-  let resolveSubmit!: (comments: Comment[]) => void;
-  const submitPromise = new Promise<Comment[]>((resolve) => {
+): { server: http.Server; waitForSubmit: () => Promise<ReviewResult> } {
+  let resolveSubmit!: (result: ReviewResult) => void;
+  const submitPromise = new Promise<ReviewResult>((resolve) => {
     resolveSubmit = resolve;
   });
 
@@ -37,10 +44,10 @@ export function createServer(
       let body = "";
       req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
       req.on("end", () => {
-        const { comments } = JSON.parse(body) as { comments: Comment[] };
+        const { comments, verdict } = JSON.parse(body) as { comments: Comment[]; verdict: Verdict };
         res.writeHead(200, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ ok: true }));
-        resolveSubmit(comments);
+        resolveSubmit({ comments, verdict });
       });
       return;
     }

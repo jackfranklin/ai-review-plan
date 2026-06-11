@@ -100,18 +100,22 @@ async function run(): Promise<void> {
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");
-  const comments = await waitForSubmit();
+  const { comments, verdict } = await waitForSubmit();
 
   server.close();
   if (tmpFile) fs.unlinkSync(tmpFile);
 
+  const verdictLabel = verdict === "approve" ? "Approved" : "Rejected";
+
   if (comments.length === 0) {
-    process.stderr.write("No comments — user had no concerns.\n");
-    process.exit(0);
+    process.stderr.write(`${verdictLabel} — no comments.\n`);
+    process.stdout.write(`<!-- verdict: ${verdict} -->\n`);
+    process.exit(verdict === "approve" ? 0 : 1);
   }
 
+  process.stdout.write(`<!-- verdict: ${verdict} -->\n`);
   process.stdout.write(formatOutput(planContent, comments, argv["comments-only"]));
-  process.exit(0);
+  process.exit(verdict === "approve" ? 0 : 1);
 }
 
 run().catch((err: unknown) => {

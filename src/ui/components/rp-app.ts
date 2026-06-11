@@ -63,17 +63,28 @@ export class RpApp extends LitElement {
       padding: 0.2rem 0.5rem;
       cursor: pointer;
     }
-    button.done {
+    button.approve {
       font: inherit;
       font-size: 0.9em;
       padding: 0.4rem 1.2rem;
-      background: var(--accent);
-      color: var(--accent-text);
+      background: var(--approve-bg);
+      color: var(--approve-text);
       border: none;
       border-radius: 4px;
       cursor: pointer;
     }
-    button.done:hover { background: var(--accent-hover); }
+    button.approve:hover { background: var(--approve-hover); }
+    button.reject {
+      font: inherit;
+      font-size: 0.9em;
+      padding: 0.4rem 1.2rem;
+      background: var(--reject-bg);
+      color: var(--reject-text);
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.reject:hover { background: var(--reject-hover); }
     button.help {
       font: inherit;
       font-size: 0.85em;
@@ -281,55 +292,9 @@ export class RpApp extends LitElement {
     details summary:hover {
       background: var(--bg-focused);
     }
-    .general-comments-panel {
-      position: fixed;
-      right: 2rem;
-      bottom: 4.5rem;
-      width: 380px;
-      max-height: 60vh;
-      background: var(--bg-raised);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35);
-      display: flex;
-      flex-direction: column;
-      z-index: 50;
-    }
-    .general-comments-header {
-      padding: 0.6rem 0.8rem;
-      background: var(--bg-elevated);
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-weight: bold;
-      border-top-left-radius: 5px;
-      border-top-right-radius: 5px;
-    }
-    .general-comments-header button {
-      background: transparent;
-      border: none;
-      color: var(--text-muted);
-      cursor: pointer;
-      font-size: 1.3em;
-      line-height: 1;
-      padding: 0;
-    }
-    .general-comments-header button:hover {
-      color: var(--text);
-    }
-    .general-comments-body {
-      padding: 0.8rem;
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      background: var(--bg-raised);
-      border-bottom-left-radius: 6px;
-      border-bottom-right-radius: 6px;
-    }
-    .general-comments-body textarea {
+    .submit-modal textarea {
       width: 100%;
-      height: 140px;
+      height: 100px;
       resize: vertical;
       background: var(--bg);
       color: var(--text);
@@ -340,31 +305,51 @@ export class RpApp extends LitElement {
       font-size: 0.95rem;
       outline: none;
       box-sizing: border-box;
+      margin-top: 0.75rem;
       transition: border-color 0.15s ease;
     }
-    .general-comments-body textarea:focus {
-      border-color: var(--accent);
-    }
-    .floating-toggle {
-      position: fixed;
-      right: 2rem;
-      bottom: 4.5rem;
-      background: var(--accent);
-      color: var(--accent-text);
-      border: none;
-      border-radius: 20px;
-      padding: 0.6rem 1.2rem;
-      cursor: pointer;
-      font-weight: bold;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.3);
-      z-index: 50;
+    .submit-modal textarea:focus { border-color: var(--accent); }
+    .submit-modal-actions {
       display: flex;
-      align-items: center;
-      gap: 0.4rem;
+      gap: 0.5rem;
+      justify-content: flex-end;
+      margin-top: 0.75rem;
     }
-    .floating-toggle:hover {
-      background: var(--accent-hover);
+    .verdict-label {
+      font-weight: 700;
+      font-size: 1.1em;
     }
+    .verdict-label.approve { color: var(--approve-bg); }
+    .verdict-label.reject  { color: var(--reject-bg); }
+    button.submit-confirm {
+      font: inherit;
+      font-size: 0.9em;
+      padding: 0.4rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.submit-confirm.approve {
+      background: var(--approve-bg);
+      color: var(--approve-text);
+    }
+    button.submit-confirm.approve:hover { background: var(--approve-hover); }
+    button.submit-confirm.reject {
+      background: var(--reject-bg);
+      color: var(--reject-text);
+    }
+    button.submit-confirm.reject:hover { background: var(--reject-hover); }
+    button.submit-cancel {
+      font: inherit;
+      font-size: 0.9em;
+      padding: 0.4rem 0.8rem;
+      background: transparent;
+      color: var(--text-muted);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button.submit-cancel:hover { color: var(--text); border-color: var(--text-muted); }
   `;
 
   @state() private blocks: Block[] = [];
@@ -377,35 +362,14 @@ export class RpApp extends LitElement {
   @state() private mode = "plan";
   @state() private files: Array<{ name: string; isDeleted: boolean }> = [];
   @state() private editingCommentText = "";
-  @state() private showGeneralComments = false;
   @state() private sidebarCollapsed = false;
-
-  private get _generalCommentText(): string {
-    const gc = this.comments.find((c) => c.startLine === 0);
-    return gc ? gc.text : "";
-  }
+  @state() private showSubmitModal = false;
+  @state() private pendingVerdict: "approve" | "reject" | null = null;
+  @state() private submitSummary = "";
 
   private get _groupedFiles() {
     return groupFilesByDirectory(this.files);
   }
-
-  private _onGeneralCommentInput = (e: Event): void => {
-    const val = (e.target as HTMLTextAreaElement).value;
-    const gcIndex = this.comments.findIndex((c) => c.startLine === 0);
-    if (val.trim() === "") {
-      if (gcIndex !== -1) {
-        this.comments = this.comments.filter((_, idx) => idx !== gcIndex);
-      }
-    } else {
-      if (gcIndex !== -1) {
-        this.comments = this.comments.map((c, idx) =>
-          idx === gcIndex ? { ...c, text: val } : c
-        );
-      } else {
-        this.comments = [...this.comments, { startLine: 0, endLine: 0, text: val }];
-      }
-    }
-  };
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -489,7 +453,7 @@ export class RpApp extends LitElement {
 
     if (e.key === "Escape") {
       if (this.showHelp) { this.showHelp = false; return; }
-      if (this.showGeneralComments) { this.showGeneralComments = false; return; }
+      if (this.showSubmitModal) { this._cancelSubmit(); return; }
       this.openCommentLine = null;
       this.editingCommentText = "";
       return;
@@ -515,11 +479,11 @@ export class RpApp extends LitElement {
       case "p":
         this._jumpToComment(-1);
         break;
-      case "d":
-        if (e.ctrlKey || e.metaKey) {
-          e.preventDefault();
-          void this._submit();
-        }
+      case "a":
+        this._openSubmitModal("approve");
+        break;
+      case "r":
+        this._openSubmitModal("reject");
         break;
       case "?":
         this.showHelp = !this.showHelp;
@@ -601,7 +565,8 @@ export class RpApp extends LitElement {
               <tr><td><kbd>p</kbd></td><td>Previous comment</td></tr>
               <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save comment</td></tr>
               <tr><td><kbd>Esc</kbd></td><td>Cancel / close</td></tr>
-              <tr><td><kbd>Ctrl</kbd>+<kbd>D</kbd></td><td>Submit review</td></tr>
+              <tr><td><kbd>a</kbd></td><td>Approve review</td></tr>
+              <tr><td><kbd>r</kbd></td><td>Reject review</td></tr>
               <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
             </tbody>
           </table>
@@ -610,11 +575,28 @@ export class RpApp extends LitElement {
     `;
   }
 
-  private _submit = async (): Promise<void> => {
+  private _openSubmitModal(verdict: "approve" | "reject"): void {
+    this.pendingVerdict = verdict;
+    this.submitSummary = "";
+    this.showSubmitModal = true;
+  }
+
+  private _cancelSubmit(): void {
+    this.showSubmitModal = false;
+    this.pendingVerdict = null;
+    this.submitSummary = "";
+  }
+
+  private _confirmSubmit = async (): Promise<void> => {
+    const verdict = this.pendingVerdict;
+    if (!verdict) return;
+    const comments = this.submitSummary.trim()
+      ? [...this.comments, { startLine: 0, endLine: 0, text: this.submitSummary.trim() }]
+      : this.comments;
     await fetch("/submit", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comments: this.comments }),
+      body: JSON.stringify({ comments, verdict }),
     });
     localStorage.removeItem(this._storageKey);
     document.body.innerHTML =
@@ -761,34 +743,44 @@ export class RpApp extends LitElement {
           <option value="light">Light</option>
         </select>
         <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
-        <button class="done" @click=${this._submit}>Done reviewing (Ctrl+D)</button>
+        <button class="approve" @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
+        <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Reject</button>
       </div>
-      ${this.showGeneralComments
-        ? html`
-            <div class="general-comments-panel">
-              <div class="general-comments-header">
-                <span>General Comment</span>
-                <button @click=${() => { this.showGeneralComments = false; }}>×</button>
-              </div>
-              <div class="general-comments-body">
-                <textarea
-                  autofocus
-                  placeholder="Enter general comments here..."
-                  .value=${this._generalCommentText}
-                  @input=${this._onGeneralCommentInput}
-                ></textarea>
-                <span style="font-size: 0.8rem; color: var(--text-muted); margin-top: 0.4rem; text-align: right;">
-                  Saved automatically
-                </span>
-              </div>
-            </div>
-          `
-        : html`
-            <button class="floating-toggle" @click=${() => { this.showGeneralComments = true; }}>
-              💬 General Comment${this._generalCommentText ? " (1)" : ""}
-            </button>
-          `}
+      ${this.showSubmitModal && this.pendingVerdict ? this._renderSubmitModal() : ""}
       ${this.showHelp ? this._renderHelp() : ""}
+    `;
+  }
+
+  private _renderSubmitModal() {
+    const verdict = this.pendingVerdict!;
+    const label = verdict === "approve" ? "Approve" : "Reject";
+    return html`
+      <div class="backdrop" @click=${this._cancelSubmit}>
+        <div class="modal submit-modal" @click=${(e: Event) => { e.stopPropagation(); }}>
+          <h2>
+            Submit as
+            <span class="verdict-label ${verdict}">${label}</span>?
+          </h2>
+          <textarea
+            autofocus
+            placeholder="Add a summary comment (optional)…"
+            .value=${this.submitSummary}
+            @input=${(e: Event) => { this.submitSummary = (e.target as HTMLTextAreaElement).value; }}
+            @keydown=${(e: KeyboardEvent) => {
+              if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                e.preventDefault();
+                void this._confirmSubmit();
+              }
+            }}
+          ></textarea>
+          <div class="submit-modal-actions">
+            <button class="submit-cancel" @click=${this._cancelSubmit}>Cancel</button>
+            <button class="submit-confirm ${verdict}" @click=${this._confirmSubmit}>
+              ${label} (Ctrl+Enter)
+            </button>
+          </div>
+        </div>
+      </div>
     `;
   }
 }

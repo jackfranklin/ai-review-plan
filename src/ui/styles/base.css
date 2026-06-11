@@ -67,6 +67,14 @@ html, body {
   --toolbar-bg:   #1a1a1a;
   --toolbar-border: #333;
 
+  /* Verdict buttons */
+  --approve-bg:    #1a5c2e;
+  --approve-hover: #22753a;
+  --approve-text:  #fff;
+  --reject-bg:     #6e1a1a;
+  --reject-hover:  #882020;
+  --reject-text:   #fff;
+
   /* Diff */
   --diff-add-bg:    #1a3a22;
   --diff-add-text:  #85e89d;
@@ -115,6 +123,14 @@ html, body {
 
   --toolbar-bg:     #f5f5f5;
   --toolbar-border: #ddd;
+
+  /* Verdict buttons */
+  --approve-bg:    #2da44e;
+  --approve-hover: #2c974b;
+  --approve-text:  #fff;
+  --reject-bg:     #cf222e;
+  --reject-hover:  #a40e26;
+  --reject-text:   #fff;
 
   /* Diff */
   --diff-add-bg:    #dafbe1;
