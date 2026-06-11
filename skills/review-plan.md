@@ -15,18 +15,19 @@ You are presenting a plan for human review using the ai-review CLI.
    and specific to the current task — the user may have multiple review tabs open
    at once and needs to tell them apart at a glance:
    ```
-   ai-review plan --comments-only --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
+   ai-review plan --title "<short task-specific title>" --theme <dark|light> /tmp/plan-<timestamp>.md
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
-   Always pass `--comments-only` — the plan is already in your context, so echoing it back wastes tokens.
-3. Wait for the CLI to exit. It blocks until the user clicks Done.
-4. If the CLI prints nothing to stdout, the user had no comments — proceed with the plan as-is.
-5. If the CLI prints annotated output, read each comment carefully and revise the plan to address it. Show the revised plan to the user before proceeding.
+3. Wait for the CLI to exit. It blocks until the user submits their review.
+4. Check the exit code and stdout:
+   - **Exit 0 (Approved):** The user approved the plan. Check for any inline comments and address them, then proceed.
+   - **Exit 1 (Rejected):** The user rejected the plan. Do not proceed. Show the user the comments from stdout and revise the plan to address them, then offer to run another review pass.
+5. The stdout always begins with `## Review: APPROVED` or `## Review: REJECTED`, followed by any comments as a numbered list. Read each comment carefully.
 6. Delete the temporary file.
 
 ## Notes
 
 - Always pass `--title`. Derive it from the current conversation (e.g. "Auth middleware refactor", "Add dark mode", "DB migration plan") — never use a generic title like "Plan review".
 - Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
-- Do not proceed with execution until after review is complete.
+- Do not proceed with execution until after review is complete and the verdict is Approved.
 - If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.

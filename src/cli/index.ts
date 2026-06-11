@@ -39,10 +39,10 @@ async function run(): Promise<void> {
       default: "dark" as const,
       describe: "Initial colour theme for the review UI",
     })
-    .option("comments-only", {
+    .option("include-plan", {
       type: "boolean",
       default: false,
-      describe: "Output only the comments summary, omitting the full plan/diff content",
+      describe: "Include the full annotated plan/diff in the output (comments-only by default)",
     })
     .help()
     .parseAsync();
@@ -105,16 +105,7 @@ async function run(): Promise<void> {
   server.close();
   if (tmpFile) fs.unlinkSync(tmpFile);
 
-  const verdictLabel = verdict === "approve" ? "Approved" : "Rejected";
-
-  if (comments.length === 0) {
-    process.stderr.write(`${verdictLabel} — no comments.\n`);
-    process.stdout.write(`<!-- verdict: ${verdict} -->\n`);
-    process.exit(verdict === "approve" ? 0 : 1);
-  }
-
-  process.stdout.write(`<!-- verdict: ${verdict} -->\n`);
-  process.stdout.write(formatOutput(planContent, comments, argv["comments-only"]));
+  process.stdout.write(formatOutput(planContent, comments, verdict, argv["include-plan"]));
   process.exit(verdict === "approve" ? 0 : 1);
 }
 
