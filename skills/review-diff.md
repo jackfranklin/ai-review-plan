@@ -28,4 +28,5 @@ You are presenting a git diff for human review using the ai-review CLI.
 
 - Always pass `--title`. Derive it from the branch name or the work being done (e.g. "Auth middleware changes", "Dark mode CSS") — never use a generic title like "Diff review".
 - Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
+- Pass `--no-wrap` to disable line wrapping if you prefer lines to overflow with a scrollbar. Line wrapping is enabled by default.
 - If the diff is very large (hundreds of files), warn the user before opening and offer to scope it to specific paths: `git diff HEAD -- src/`.

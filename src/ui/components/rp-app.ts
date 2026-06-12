@@ -350,6 +350,22 @@ export class RpApp extends LitElement {
       cursor: pointer;
     }
     button.submit-cancel:hover { color: var(--text); border-color: var(--text-muted); }
+    .wrap-toggle {
+      font-size: 0.85em;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+      cursor: pointer;
+      user-select: none;
+    }
+    .wrap-toggle:hover {
+      color: var(--text);
+    }
+    .wrap-toggle input {
+      cursor: pointer;
+      margin: 0;
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -366,6 +382,7 @@ export class RpApp extends LitElement {
   @state() private showSubmitModal = false;
   @state() private pendingVerdict: "approve" | "reject" | null = null;
   @state() private submitSummary = "";
+  @state() private wrapLines = false;
 
   private get _groupedFiles() {
     return groupFilesByDirectory(this.files);
@@ -416,10 +433,22 @@ export class RpApp extends LitElement {
     document.documentElement.dataset.theme = name;
   }
 
+  private readonly _toggleWrapLines = (e: Event): void => {
+    this.wrapLines = (e.target as HTMLInputElement).checked;
+    localStorage.setItem("ai-review:wrap-lines", String(this.wrapLines));
+  };
+
   private async _fetchPlan(): Promise<void> {
     const res = await fetch("/plan");
-    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string };
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean };
     this.mode = data.mode ?? "plan";
+
+    if (data.wrap !== undefined) {
+      this.wrapLines = data.wrap;
+    } else {
+      const saved = localStorage.getItem("ai-review:wrap-lines");
+      this.wrapLines = saved !== null ? saved === "true" : true;
+    }
     
     if (this.mode === "diff") {
       this.blocks = parseDiff(data.markdown);
@@ -581,11 +610,11 @@ export class RpApp extends LitElement {
     this.showSubmitModal = true;
   }
 
-  private _cancelSubmit(): void {
+  private readonly _cancelSubmit = (): void => {
     this.showSubmitModal = false;
     this.pendingVerdict = null;
     this.submitSummary = "";
-  }
+  };
 
   private _confirmSubmit = async (): Promise<void> => {
     const verdict = this.pendingVerdict;
@@ -652,6 +681,7 @@ export class RpApp extends LitElement {
         .commentText=${isOpen ? this.editingCommentText : ""}
         .isDiff=${this.mode === "diff"}
         .theme=${this.theme}
+        ?wrap-lines=${this.wrapLines}
       ></rp-plan-line>
     `;
   }
@@ -743,6 +773,14 @@ export class RpApp extends LitElement {
           <option value="dark">Dark</option>
           <option value="light">Light</option>
         </select>
+        <label class="wrap-toggle">
+          <input
+            type="checkbox"
+            .checked=${this.wrapLines}
+            @change=${this._toggleWrapLines}
+          />
+          Wrap lines
+        </label>
         <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
         <button class="approve" @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
         <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Reject</button>
@@ -753,7 +791,8 @@ export class RpApp extends LitElement {
   }
 
   private _renderSubmitModal() {
-    const verdict = this.pendingVerdict!;
+    const verdict = this.pendingVerdict;
+    if (!verdict) return html``;
     const label = verdict === "approve" ? "Approve" : "Reject";
     return html`
       <div class="backdrop" @click=${this._cancelSubmit}>

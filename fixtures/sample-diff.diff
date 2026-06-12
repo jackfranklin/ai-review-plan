@@ -7,7 +7,7 @@ index 1234567..89abcde 100644
  
    render() {
 -    return html`<div>Plan Review</div>`;
-+    return html`<div>Review App</div>`;
++    return html`<div class="some-extremely-long-class-name-designed-to-overflow-the-viewport-and-trigger-the-scrollbar-so-we-can-test-the-line-wrapping-feature-successfully">Review App</div>`;
    }
  }
 diff --git a/src/ui/styles.css b/src/ui/styles.css

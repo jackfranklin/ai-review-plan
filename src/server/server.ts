@@ -19,7 +19,8 @@ export function createServer(
   uiHtml: string,
   title = "",
   theme = "dark",
-  mode = "plan"
+  mode = "plan",
+  wrap?: boolean
 ): { server: http.Server; waitForSubmit: () => Promise<ReviewResult> } {
   let resolveSubmit!: (result: ReviewResult) => void;
   const submitPromise = new Promise<ReviewResult>((resolve) => {
@@ -36,7 +37,7 @@ export function createServer(
     if (req.method === "GET" && req.url === "/plan") {
       const markdown = fs.readFileSync(planPath, "utf-8");
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ markdown, title, theme, mode }));
+      res.end(JSON.stringify({ markdown, title, theme, mode, wrap }));
       return;
     }
 

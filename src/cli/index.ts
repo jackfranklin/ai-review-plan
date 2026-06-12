@@ -39,6 +39,10 @@ async function run(): Promise<void> {
       default: "dark" as const,
       describe: "Initial colour theme for the review UI",
     })
+    .option("wrap", {
+      type: "boolean",
+      describe: "Line wrapping mode in UI (default: true)",
+    })
     .option("include-plan", {
       type: "boolean",
       default: false,
@@ -51,6 +55,7 @@ async function run(): Promise<void> {
   const preferredPort = argv.port;
   const title = argv.title;
   const theme = argv.theme;
+  const wrap = argv.wrap;
 
   let planPath: string;
   let tmpFile: string | null = null;
@@ -87,7 +92,7 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode);
+  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode, wrap);
   server.listen(port);
 
   const url = `http://localhost:${String(port)}`;

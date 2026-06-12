@@ -121,6 +121,10 @@ export class RpPlanLine extends LitElement {
     .diff-add { background: var(--diff-add-bg); color: var(--diff-add-text); }
     .diff-del { background: var(--diff-del-bg); color: var(--diff-del-text); }
     .diff-file-header { background: var(--bg-elevated); font-weight: bold; padding: 0.4rem 0.5rem; border-bottom: 1px solid var(--border); border-left: 4px solid var(--accent); }
+    :host([wrap-lines]) .content pre {
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
   `;
 
   @property({ attribute: false }) block!: Block;
