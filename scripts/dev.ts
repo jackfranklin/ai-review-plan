@@ -19,11 +19,12 @@ planServer.listen(PLAN_PORT, () => {
 });
 
 // Log submit output to the terminal but keep servers running for continued iteration
-void waitForSubmit().then((comments) => {
+void waitForSubmit().then(({ comments, verdict }) => {
+  console.log(`\n[submit] Verdict: ${verdict.toUpperCase()}`);
   if (comments.length === 0) {
-    console.log("\n[submit] No comments.");
+    console.log("[submit] No comments.");
   } else {
-    console.log(`\n[submit] ${comments.length} comment(s):`);
+    console.log(`[submit] ${comments.length} comment(s):`);
     for (const c of comments) {
       const label =
         c.startLine === 0
