@@ -1,6 +1,6 @@
 # Changelog
 
-## [0.2.0] - 2026-06-11
+## [0.2.0] - 2026-06-12
 
 ### Breaking Changes
 
@@ -10,6 +10,7 @@
 
 ### Features
 
+- Line wrapping support in UI by default, with `--wrap`/`--no-wrap` CLI overrides
 - Group and sort files by directory in the diff review sidebar ([9f77071](https://github.com/jackfranklin/ai-review-plan/commit/9f77071))
 - Mermaid diagram rendering support ([39e4ccc](https://github.com/jackfranklin/ai-review-plan/commit/39e4ccc))
 - Markdown tables support ([d893658](https://github.com/jackfranklin/ai-review-plan/commit/d893658))
