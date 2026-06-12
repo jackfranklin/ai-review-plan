@@ -31,6 +31,14 @@ Figma specs. Engineering estimates 2–3 days of work.
    ```
 3. Apply the `data-theme` attribute to `<html>` on load from localStorage.
 
+   **Theme Color Scheme:**
+
+   | Theme Element | Light Value | Dark Value |
+   |:---|:---:|:---:|
+   | Background | `#ffffff` | `#1e1e1e` |
+   | Text | `#1a1a1a` | `#d4d4d4` |
+   | Border | `#e0e0e0` | `#444444` |
+
 ---
 
 ## Phase 2 — Toggle component

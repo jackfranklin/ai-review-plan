@@ -20,6 +20,9 @@ export function groupBlocks(markdown: string): Block[] {
   const blocks: Block[] = [];
   let i = 0;
 
+  // Matches GFM table delimiter rows (e.g. |---|---| or ---|---, indented up to 3 spaces)
+  const delimiterRegex = /^[ \t]*(?:\|)?[ \t]*(?::?-+:?[ \t]*\|[ \t]*)*:?-+:?[ \t]*(?:\|)?[ \t]*$/;
+
   while (i < lines.length) {
     const line = lines[i];
 
@@ -46,6 +49,28 @@ export function groupBlocks(markdown: string): Block[] {
       continue;
     }
 
+    // Markdown Table: starts with a header line containing a pipe, followed by a delimiter line
+    if (i + 1 < lines.length && line.includes("|") && lines[i + 1].includes("|") && delimiterRegex.test(lines[i + 1])) {
+      const start = i;
+      i += 2; // skip header and delimiter
+      while (i < lines.length) {
+        const nextLine = lines[i];
+        if (!nextLine.includes("|") || nextLine.trim() === "") {
+          break;
+        }
+        if (/^( *)(`{3,}|~{3,})/.exec(nextLine)) {
+          break;
+        }
+        i++;
+      }
+      blocks.push({
+        startLine: start + 1,
+        endLine: i,
+        raw: lines.slice(start, i).join("\n"),
+      });
+      continue;
+    }
+
     // Single line (handles headings, list items, blockquotes, blank lines, etc.)
     blocks.push({
       startLine: i + 1,
@@ -59,10 +84,9 @@ export function groupBlocks(markdown: string): Block[] {
 }
 
 export function parseLineIndent(raw: string): { raw: string; indent: number } {
-  const fenceMatch = /^( *)(`{3,}|~{3,})/.exec(raw);
-  
-  if (fenceMatch) {
-    const indent = fenceMatch[1].length;
+  if (raw.includes("\n")) {
+    const match = /^[ \t]*/.exec(raw);
+    const indent = match ? match[0].length : 0;
     if (indent > 0) {
       const lines = raw.split("\n");
       const strippedLines = lines.map(line => {

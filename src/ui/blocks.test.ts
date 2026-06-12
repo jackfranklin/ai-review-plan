@@ -43,6 +43,41 @@ describe("groupBlocks", () => {
     expect(blocks).toHaveLength(2);
     expect(blocks[0]).toMatchObject({ startLine: 1, endLine: 5 });
   });
+
+  it("groups a markdown table into a single block", () => {
+    const blocks = groupBlocks("| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      startLine: 1,
+      endLine: 3,
+      raw: "| Col 1 | Col 2 |\n|---|---|\n| val 1 | val 2 |"
+    });
+  });
+
+  it("handles table delimiters with different alignment indicators", () => {
+    const blocks = groupBlocks("| Col 1 | Col 2 |\n| :--- | :---: |\n| val 1 | val 2 |");
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]).toMatchObject({
+      startLine: 1,
+      endLine: 3,
+      raw: "| Col 1 | Col 2 |\n| :--- | :---: |\n| val 1 | val 2 |"
+    });
+  });
+
+  it("terminates table grouping on blank lines or non-pipe lines", () => {
+    const blocks = groupBlocks("| Col 1 |\n|---|\n| val 1 |\n\nparagraph");
+    expect(blocks).toHaveLength(3);
+    expect(blocks[0]).toMatchObject({ startLine: 1, endLine: 3 });
+    expect(blocks[1]).toMatchObject({ startLine: 4, endLine: 4, raw: "" });
+    expect(blocks[2]).toMatchObject({ startLine: 5, endLine: 5, raw: "paragraph" });
+  });
+
+  it("does not group non-table lines with pipes and no delimiters", () => {
+    const blocks = groupBlocks("this | that\nother | line");
+    expect(blocks).toHaveLength(2);
+    expect(blocks[0]).toMatchObject({ startLine: 1, endLine: 1 });
+    expect(blocks[1]).toMatchObject({ startLine: 2, endLine: 2 });
+  });
 });
 
 describe("parseLineIndent", () => {
@@ -59,6 +94,14 @@ describe("parseLineIndent", () => {
   it("trims fenced code blocks and returns their indent", () => {
     const result = parseLineIndent("  ```ts\n  code\n  ```");
     expect(result).toEqual({ raw: "```ts\ncode\n```", indent: 2 });
+  });
+
+  it("trims table blocks and returns their indent", () => {
+    const result = parseLineIndent("  | Col 1 |\n  |---|\n  | val 1 |");
+    expect(result).toEqual({
+      raw: "| Col 1 |\n|---|\n| val 1 |",
+      indent: 2
+    });
   });
 
   it("handles lines with only spaces", () => {
