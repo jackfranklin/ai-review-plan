@@ -595,7 +595,7 @@ export class RpApp extends LitElement {
               <tr><td><kbd>Ctrl</kbd>+<kbd>Enter</kbd></td><td>Save comment</td></tr>
               <tr><td><kbd>Esc</kbd></td><td>Cancel / close</td></tr>
               <tr><td><kbd>a</kbd></td><td>Approve review</td></tr>
-              <tr><td><kbd>r</kbd></td><td>Reject review</td></tr>
+              <tr><td><kbd>r</kbd></td><td>Request Changes</td></tr>
               <tr><td><kbd>?</kbd></td><td>Show this help</td></tr>
             </tbody>
           </table>
@@ -783,7 +783,7 @@ export class RpApp extends LitElement {
         </label>
         <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
         <button class="approve" @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
-        <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Reject</button>
+        <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Request Changes</button>
       </div>
       ${this.showSubmitModal && this.pendingVerdict ? this._renderSubmitModal() : ""}
       ${this.showHelp ? this._renderHelp() : ""}
@@ -793,7 +793,7 @@ export class RpApp extends LitElement {
   private _renderSubmitModal() {
     const verdict = this.pendingVerdict;
     if (!verdict) return html``;
-    const label = verdict === "approve" ? "Approve" : "Reject";
+    const label = verdict === "approve" ? "Approve" : "Request Changes";
     return html`
       <div class="backdrop" @click=${this._cancelSubmit}>
         <div class="modal submit-modal" @click=${(e: Event) => { e.stopPropagation(); }}>
