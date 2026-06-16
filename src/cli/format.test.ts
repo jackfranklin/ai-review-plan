@@ -7,9 +7,9 @@ describe("formatOutput", () => {
     expect(result).toContain("## Review: APPROVED");
   });
 
-  it("uses REJECTED heading for reject verdict", () => {
+  it("uses CHANGES REQUESTED heading for reject verdict", () => {
     const result = formatOutput("# Plan", [], "reject");
-    expect(result).toContain("## Review: REJECTED");
+    expect(result).toContain("## Review: CHANGES REQUESTED");
   });
 
   it("says no inline comments when there are none", () => {

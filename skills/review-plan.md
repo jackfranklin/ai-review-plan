@@ -21,8 +21,8 @@ You are presenting a plan for human review using the ai-review CLI.
 3. Wait for the CLI to exit. It blocks until the user submits their review.
 4. Check the exit code and stdout:
    - **Exit 0 (Approved):** The user approved the plan. Check for any inline comments and address them, then proceed.
-   - **Exit 1 (Rejected):** The user rejected the plan. Do not proceed. Show the user the comments from stdout and revise the plan to address them, then offer to run another review pass.
-5. The stdout always begins with `## Review: APPROVED` or `## Review: REJECTED`, followed by any comments as a numbered list. Read each comment carefully.
+   - **Exit 1 (Changes Requested):** The user requested changes. Do not proceed. Show the user the comments from stdout and revise the plan to address them, then offer to run another review pass.
+5. The stdout always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully.
 6. Delete the temporary file.
 
 ## Notes

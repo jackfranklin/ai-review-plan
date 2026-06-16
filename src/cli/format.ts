@@ -6,7 +6,7 @@ export function formatOutput(
   verdict: Verdict,
   includePlan = false
 ): string {
-  const verdictHeading = verdict === "approve" ? "APPROVED" : "REJECTED";
+  const verdictHeading = verdict === "approve" ? "APPROVED" : "CHANGES REQUESTED";
   const lines: string[] = [`## Review: ${verdictHeading}`, ""];
 
   const general = comments.filter((c) => c.startLine === 0);
