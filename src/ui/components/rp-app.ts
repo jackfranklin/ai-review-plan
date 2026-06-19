@@ -384,6 +384,7 @@ export class RpApp extends LitElement {
   @state() private submitSummary = "";
   @state() private wrapLines = false;
   @state() private _loadError = "";
+  @state() private _submitError = "";
 
   private get _groupedFiles() {
     return groupFilesByDirectory(this.files);
@@ -625,19 +626,30 @@ export class RpApp extends LitElement {
     this.showSubmitModal = false;
     this.pendingVerdict = null;
     this.submitSummary = "";
+    this._submitError = "";
   };
 
-  private _confirmSubmit = async (): Promise<void> => {
+  private readonly _confirmSubmit = async (): Promise<void> => {
     const verdict = this.pendingVerdict;
     if (!verdict) return;
     const comments = this.submitSummary.trim()
       ? [...this.comments, { startLine: 0, endLine: 0, text: this.submitSummary.trim() }]
       : this.comments;
-    await fetch("/submit", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ comments, verdict }),
-    });
+    try {
+      const res = await fetch("/submit", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ comments, verdict }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({})) as { error?: string };
+        this._submitError = body.error ?? `Server returned ${String(res.status)}`;
+        return;
+      }
+    } catch (err) {
+      this._submitError = err instanceof Error ? err.message : String(err);
+      return;
+    }
     localStorage.removeItem(this._storageKey);
     document.body.innerHTML =
       "<p style='padding:2rem;color:#888'>Done! You can close this tab.</p>";
@@ -827,6 +839,7 @@ export class RpApp extends LitElement {
               }
             }}
           ></textarea>
+          ${this._submitError ? html`<p style="color:#c0392b;margin:0.5rem 0 0;">${this._submitError}</p>` : ""}
           <div class="submit-modal-actions">
             <button class="submit-cancel" @click=${this._cancelSubmit}>Cancel</button>
             <button class="submit-confirm ${verdict}" @click=${this._confirmSubmit}>

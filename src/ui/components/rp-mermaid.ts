@@ -3,11 +3,10 @@ import { customElement, property, state } from "lit/decorators.js";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import mermaid from "mermaid";
 
-mermaid.initialize({
-  startOnLoad: false,
-});
+mermaid.initialize({ startOnLoad: false });
 
 let nextId = 0;
+let initializedTheme = "";
 
 @customElement("rp-mermaid")
 export class RpMermaid extends LitElement {
@@ -47,12 +46,13 @@ export class RpMermaid extends LitElement {
       return;
     }
 
+    const mermaidTheme = this.theme === "dark" ? "dark" : "default";
+    if (mermaidTheme !== initializedTheme) {
+      mermaid.initialize({ startOnLoad: false, theme: mermaidTheme });
+      initializedTheme = mermaidTheme;
+    }
     const id = `mermaid-svg-${String(nextId++)}`;
     try {
-      mermaid.initialize({
-        startOnLoad: false,
-        theme: this.theme === "dark" ? "dark" : "default",
-      });
       const { svg } = await mermaid.render(id, this.code);
       this._svg = svg;
       this._error = "";
