@@ -45,10 +45,15 @@ export function createServer(
       let body = "";
       req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
       req.on("end", () => {
-        const { comments, verdict } = JSON.parse(body) as { comments: Comment[]; verdict: Verdict };
-        res.writeHead(200, { "Content-Type": "application/json" });
-        res.end(JSON.stringify({ ok: true }));
-        resolveSubmit({ comments, verdict });
+        try {
+          const { comments, verdict } = JSON.parse(body) as { comments: Comment[]; verdict: Verdict };
+          res.writeHead(200, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ ok: true }));
+          resolveSubmit({ comments, verdict });
+        } catch (err) {
+          res.writeHead(400, { "Content-Type": "application/json" });
+          res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
+        }
       });
       return;
     }

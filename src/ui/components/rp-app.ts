@@ -383,6 +383,7 @@ export class RpApp extends LitElement {
   @state() private pendingVerdict: "approve" | "reject" | null = null;
   @state() private submitSummary = "";
   @state() private wrapLines = false;
+  @state() private _loadError = "";
 
   private get _groupedFiles() {
     return groupFilesByDirectory(this.files);
@@ -439,7 +440,17 @@ export class RpApp extends LitElement {
   };
 
   private async _fetchPlan(): Promise<void> {
-    const res = await fetch("/plan");
+    let res: Response;
+    try {
+      res = await fetch("/plan");
+    } catch (err) {
+      this._loadError = err instanceof Error ? err.message : String(err);
+      return;
+    }
+    if (!res.ok) {
+      this._loadError = `Server returned ${String(res.status)}`;
+      return;
+    }
     const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean };
     this.mode = data.mode ?? "plan";
 
@@ -687,6 +698,9 @@ export class RpApp extends LitElement {
   }
 
   override render() {
+    if (this._loadError) {
+      return html`<p style="color:#c0392b">Failed to load review content: ${this._loadError}</p>`;
+    }
     if (this.blocks.length === 0) {
       return html`<p style="color:#888">Loading…</p>`;
     }

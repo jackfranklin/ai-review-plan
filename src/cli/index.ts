@@ -105,10 +105,13 @@ async function run(): Promise<void> {
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");
-  const { comments, verdict } = await waitForSubmit();
-
-  server.close();
-  if (tmpFile) fs.unlinkSync(tmpFile);
+  let comments, verdict;
+  try {
+    ({ comments, verdict } = await waitForSubmit());
+  } finally {
+    server.close();
+    if (tmpFile) fs.unlinkSync(tmpFile);
+  }
 
   process.stdout.write(formatOutput(planContent, comments, verdict, argv["include-plan"]));
   process.exit(verdict === "approve" ? 0 : 1);
