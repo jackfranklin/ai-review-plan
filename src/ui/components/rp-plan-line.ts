@@ -1,5 +1,6 @@
 import { LitElement, html, css } from "lit";
 import { unsafeHTML } from "lit/directives/unsafe-html.js";
+import { classMap } from "lit/directives/class-map.js";
 import { customElement, property } from "lit/decorators.js";
 import { marked } from "marked";
 import type { Comment } from "../types.js";
@@ -173,17 +174,22 @@ export class RpPlanLine extends LitElement {
         : `${String(this.block.startLine)}–${String(this.block.endLine)}`;
 
     let contentHtml;
-    let wrapClass = `line-wrap ${this.block.startLine !== this.block.endLine ? "multiline" : ""} ${this.focused ? "focused" : ""}`;
     let indent = 0;
+    const firstChar = this.block.raw[0];
+
+    const wrapClasses = {
+      "line-wrap": true,
+      multiline: this.block.startLine !== this.block.endLine,
+      focused: this.focused,
+      "diff-file-header": this.isDiff && this.block.type === "file-header",
+      "diff-add": this.isDiff && this.block.type !== "file-header" && firstChar === "+",
+      "diff-del": this.isDiff && this.block.type !== "file-header" && firstChar === "-",
+    };
 
     if (this.isDiff) {
       if (this.block.type === "file-header") {
-        wrapClass += " diff-file-header";
         contentHtml = html`<strong style="font-family:inherit;">${this.block.raw}</strong>`;
       } else {
-        const firstChar = this.block.raw[0];
-        if (firstChar === '+') wrapClass += " diff-add";
-        if (firstChar === '-') wrapClass += " diff-del";
         contentHtml = html`<pre style="margin:0; font:inherit;"><code>${this.block.raw}</code></pre>`;
       }
     } else {
@@ -204,8 +210,8 @@ export class RpPlanLine extends LitElement {
     }
 
     return html`
-      <div class="${wrapClass}" @click=${() => { this._onLineClick(); }} @dblclick=${(e: MouseEvent) => { this._onLineDblClick(e); }}>
-        <div class="gutter ${this.isDiff ? "is-diff" : ""}" @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
+      <div class=${classMap(wrapClasses)} @click=${() => { this._onLineClick(); }} @dblclick=${(e: MouseEvent) => { this._onLineDblClick(e); }}>
+        <div class=${classMap({ gutter: true, "is-diff": this.isDiff })} @click=${(e: Event) => { e.stopPropagation(); this._onGutterClick(); }}>
           <span class="plus">+</span>
           ${this.isDiff
             ? html`
