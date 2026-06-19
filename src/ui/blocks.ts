@@ -1,4 +1,5 @@
 export interface Block {
+  type: "file-header" | "hunk" | "diff-line" | "content";
   startLine: number;
   endLine: number;
   raw: string;
@@ -42,6 +43,7 @@ export function groupBlocks(markdown: string): Block[] {
         i++;
       }
       blocks.push({
+        type: "content",
         startLine: start + 1,
         endLine: i,
         raw: lines.slice(start, i).join("\n"),
@@ -64,6 +66,7 @@ export function groupBlocks(markdown: string): Block[] {
         i++;
       }
       blocks.push({
+        type: "content",
         startLine: start + 1,
         endLine: i,
         raw: lines.slice(start, i).join("\n"),
@@ -73,6 +76,7 @@ export function groupBlocks(markdown: string): Block[] {
 
     // Single line (handles headings, list items, blockquotes, blank lines, etc.)
     blocks.push({
+      type: "content",
       startLine: i + 1,
       endLine: i + 1,
       raw: line,
@@ -144,11 +148,12 @@ export function parseDiff(markdown: string): Block[] {
     if (isOldFileLine && isNewFileLine) {
       const fileName = lines[i + 1] === "+++ /dev/null" ? line.substring(6) : lines[i + 1].substring(6);
       currentFile = fileName;
-      
+
       blocks.push({
+        type: "file-header",
         startLine: i + 1,
         endLine: i + 2,
-        raw: `File: ${currentFile}`,
+        raw: currentFile,
         fileName: currentFile,
         isDeleted: isDeleted,
       });
@@ -161,6 +166,7 @@ export function parseDiff(markdown: string): Block[] {
       oldLine = parseInt(hunkMatch[1], 10);
       newLine = parseInt(hunkMatch[2], 10);
       blocks.push({
+        type: "hunk",
         startLine: i + 1,
         endLine: i + 1,
         raw: line,
@@ -173,6 +179,7 @@ export function parseDiff(markdown: string): Block[] {
 
     if (line.startsWith("+")) {
       blocks.push({
+        type: "diff-line",
         startLine: i + 1,
         endLine: i + 1,
         raw: line,
@@ -184,6 +191,7 @@ export function parseDiff(markdown: string): Block[] {
       i++;
     } else if (line.startsWith("-")) {
       blocks.push({
+        type: "diff-line",
         startLine: i + 1,
         endLine: i + 1,
         raw: line,
@@ -196,6 +204,7 @@ export function parseDiff(markdown: string): Block[] {
     } else {
       const isHeader = line.startsWith("diff --git") || line.startsWith("index");
       blocks.push({
+        type: "diff-line",
         startLine: i + 1,
         endLine: i + 1,
         raw: line,

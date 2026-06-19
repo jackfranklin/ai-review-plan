@@ -465,8 +465,8 @@ export class RpApp extends LitElement {
     if (this.mode === "diff") {
       this.blocks = parseDiff(data.markdown);
       this.files = this.blocks
-        .filter((b) => b.raw.startsWith("File: "))
-        .map((b) => ({ name: b.raw.substring(6), isDeleted: b.isDeleted || false }));
+        .filter((b) => b.type === "file-header")
+        .map((b) => ({ name: b.raw, isDeleted: b.isDeleted || false }));
     } else {
       this.blocks = groupBlocks(data.markdown);
     }
@@ -656,7 +656,7 @@ export class RpApp extends LitElement {
   };
 
   private _scrollToFile(fileName: string) {
-    const block = this.blocks.find((b) => b.raw === `File: ${fileName}`);
+    const block = this.blocks.find((b) => b.type === "file-header" && b.raw === fileName);
     if (block) {
       const el = this.shadowRoot?.querySelector(`details[data-file="${fileName}"]`);
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -691,11 +691,10 @@ export class RpApp extends LitElement {
       this.openCommentLine !== null &&
       this.openCommentLine >= block.startLine &&
       this.openCommentLine <= block.endLine;
-    const isHeader = block.raw.startsWith("File: ");
     return html`
       <rp-plan-line
         data-start-line=${block.startLine}
-        class=${isHeader ? "sticky-header" : ""}
+        class=${block.type === "file-header" ? "sticky-header" : ""}
         .block=${block}
         .comments=${blockComments}
         ?focused=${this.focusedLine >= block.startLine &&
@@ -776,7 +775,7 @@ export class RpApp extends LitElement {
                     </summary>
                     <div class="file-content">
                       ${group.blocks
-                        .filter((block) => !block.raw.startsWith("File: "))
+                        .filter((block) => block.type !== "file-header")
                         .map((block) => this._renderBlock(block))}
                     </div>
                   </details>

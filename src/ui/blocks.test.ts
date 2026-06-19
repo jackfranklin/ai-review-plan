@@ -115,7 +115,8 @@ describe("parseDiff", () => {
     const diff = "--- a/file.ts\n+++ b/file.ts\ncontent";
     const blocks = parseDiff(diff);
     expect(blocks).toHaveLength(2);
-    expect(blocks[0].raw).toBe("File: file.ts");
+    expect(blocks[0].type).toBe("file-header");
+    expect(blocks[0].raw).toBe("file.ts");
     expect(blocks[1].raw).toBe("content");
   });
 
@@ -140,7 +141,8 @@ describe("parseDiff", () => {
   it("handles new files with --- /dev/null header", () => {
     const diff = "--- /dev/null\n+++ b/src/new.ts\n@@ -0,0 +1,2 @@\n+line one\n+line two";
     const blocks = parseDiff(diff);
-    expect(blocks[0].raw).toBe("File: src/new.ts");
+    expect(blocks[0].type).toBe("file-header");
+    expect(blocks[0].raw).toBe("src/new.ts");
     const addedLines = blocks.filter((b) => b.raw.startsWith("+"));
     expect(addedLines).toHaveLength(2);
     expect(addedLines[0]).toMatchObject({ newLine: 1 });
