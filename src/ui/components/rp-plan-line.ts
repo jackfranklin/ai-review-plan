@@ -136,7 +136,7 @@ export class RpPlanLine extends LitElement {
   @property({ type: String }) commentText = "";
   @property({ type: String }) theme = "dark";
 
-  private _onGutterClick() {
+  private _dispatchRequestComment() {
     this.dispatchEvent(
       new CustomEvent("request-comment", {
         detail: { startLine: this.block.startLine, endLine: this.block.endLine },
@@ -144,6 +144,10 @@ export class RpPlanLine extends LitElement {
         composed: true,
       })
     );
+  }
+
+  private _onGutterClick() {
+    this._dispatchRequestComment();
   }
 
   private _onLineClick() {
@@ -158,13 +162,7 @@ export class RpPlanLine extends LitElement {
 
   private _onLineDblClick(e: MouseEvent) {
     e.stopPropagation();
-    this.dispatchEvent(
-      new CustomEvent("request-comment", {
-        detail: { startLine: this.block.startLine, endLine: this.block.endLine },
-        bubbles: true,
-        composed: true,
-      })
-    );
+    this._dispatchRequestComment();
   }
 
   override render() {
