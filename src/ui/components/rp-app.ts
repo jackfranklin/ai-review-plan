@@ -385,6 +385,7 @@ export class RpApp extends LitElement {
   @state() private wrapLines = false;
   @state() private _loadError = "";
   @state() private _submitError = "";
+  @state() private _submitted = false;
   @state() private _groupedFiles: ReturnType<typeof groupFilesByDirectory> = [];
   @state() private _groupedBlocks: BlockGroup[] = [];
 
@@ -651,8 +652,7 @@ export class RpApp extends LitElement {
       return;
     }
     localStorage.removeItem(this._storageKey);
-    document.body.innerHTML =
-      "<p style='padding:2rem;color:#888'>Done! You can close this tab.</p>";
+    this._submitted = true;
   };
 
   private _scrollToFile(fileName: string) {
@@ -690,6 +690,9 @@ export class RpApp extends LitElement {
   }
 
   override render() {
+    if (this._submitted) {
+      return html`<p style="padding:2rem;color:#888">Done! You can close this tab.</p>`;
+    }
     if (this._loadError) {
       return html`<p style="color:#c0392b">Failed to load review content: ${this._loadError}</p>`;
     }
