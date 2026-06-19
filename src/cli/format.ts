@@ -12,10 +12,8 @@ export function formatOutput(
   const general = comments.filter((c) => c.startLine === 0);
   const inline = comments.filter((c) => c.startLine !== 0);
 
-  if (general.length > 0) {
-    for (const c of general) {
-      lines.push(c.text, "");
-    }
+  for (const c of general) {
+    lines.push(c.text, "");
   }
 
   if (inline.length === 0) {
