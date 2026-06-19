@@ -1,7 +1,7 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { groupBlocks, parseDiff, groupFilesByDirectory } from "../blocks.js";
-import type { Block } from "../blocks.js";
+import { groupBlocks, parseDiff, groupFilesByDirectory, computeGroupedBlocks } from "../blocks.js";
+import type { Block, BlockGroup } from "../blocks.js";
 import type { Comment } from "../types.js";
 import "./rp-plan-line.js";
 
@@ -385,10 +385,8 @@ export class RpApp extends LitElement {
   @state() private wrapLines = false;
   @state() private _loadError = "";
   @state() private _submitError = "";
-
-  private get _groupedFiles() {
-    return groupFilesByDirectory(this.files);
-  }
+  @state() private _groupedFiles: ReturnType<typeof groupFilesByDirectory> = [];
+  @state() private _groupedBlocks: BlockGroup[] = [];
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -467,6 +465,8 @@ export class RpApp extends LitElement {
       this.files = this.blocks
         .filter((b) => b.type === "file-header")
         .map((b) => ({ name: b.raw, isDeleted: b.isDeleted || false }));
+      this._groupedFiles = groupFilesByDirectory(this.files);
+      this._groupedBlocks = computeGroupedBlocks(this.blocks);
     } else {
       this.blocks = groupBlocks(data.markdown);
     }
@@ -662,25 +662,6 @@ export class RpApp extends LitElement {
       el?.scrollIntoView({ behavior: "smooth", block: "start" });
       this.focusedLine = block.startLine;
     }
-  }
-
-  private get _groupedBlocks() {
-    const groups: Array<{ fileName: string | undefined; isDeleted: boolean; blocks: Block[] }> = [];
-    let currentGroup: { fileName: string | undefined; isDeleted: boolean; blocks: Block[] } | null = null;
-
-    for (const block of this.blocks) {
-      if (!currentGroup || block.fileName !== currentGroup.fileName) {
-        currentGroup = {
-          fileName: block.fileName,
-          isDeleted: block.isDeleted || false,
-          blocks: [block]
-        };
-        groups.push(currentGroup);
-      } else {
-        currentGroup.blocks.push(block);
-      }
-    }
-    return groups;
   }
 
   private _renderBlock(block: Block) {

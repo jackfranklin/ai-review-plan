@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { groupBlocks, parseLineIndent, parseDiff, groupFilesByDirectory } from "./blocks.js";
+import { groupBlocks, parseLineIndent, parseDiff, groupFilesByDirectory, computeGroupedBlocks } from "./blocks.js";
+import type { Block } from "./blocks.js";
 
 describe("groupBlocks", () => {
   it("returns one block per line for plain content", () => {
@@ -213,3 +214,47 @@ describe("groupFilesByDirectory", () => {
   });
 });
 
+describe("computeGroupedBlocks", () => {
+  const block = (fileName: string | undefined, startLine: number): Block => ({
+    type: "diff-line",
+    startLine,
+    endLine: startLine,
+    raw: "line",
+    fileName,
+  });
+
+  it("returns a single group when all blocks share the same fileName", () => {
+    const blocks = [block("src/a.ts", 1), block("src/a.ts", 2), block("src/a.ts", 3)];
+    const groups = computeGroupedBlocks(blocks);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].fileName).toBe("src/a.ts");
+    expect(groups[0].blocks).toHaveLength(3);
+  });
+
+  it("splits into separate groups when fileName changes", () => {
+    const blocks = [block("src/a.ts", 1), block("src/b.ts", 2), block("src/b.ts", 3)];
+    const groups = computeGroupedBlocks(blocks);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].fileName).toBe("src/a.ts");
+    expect(groups[1].fileName).toBe("src/b.ts");
+    expect(groups[1].blocks).toHaveLength(2);
+  });
+
+  it("groups blocks with no fileName (plan mode content) together", () => {
+    const blocks = [block(undefined, 1), block(undefined, 2)];
+    const groups = computeGroupedBlocks(blocks);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].fileName).toBeUndefined();
+    expect(groups[0].blocks).toHaveLength(2);
+  });
+
+  it("marks a group as deleted when the first block has isDeleted set", () => {
+    const deletedBlock: Block = { type: "file-header", startLine: 1, endLine: 1, raw: "src/a.ts", fileName: "src/a.ts", isDeleted: true };
+    const groups = computeGroupedBlocks([deletedBlock]);
+    expect(groups[0].isDeleted).toBe(true);
+  });
+
+  it("returns an empty array for empty input", () => {
+    expect(computeGroupedBlocks([])).toEqual([]);
+  });
+});

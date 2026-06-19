@@ -228,6 +228,12 @@ export interface FileItem {
   isDeleted: boolean;
 }
 
+export interface BlockGroup {
+  fileName: string | undefined;
+  isDeleted: boolean;
+  blocks: Block[];
+}
+
 export interface FileGroup {
   dirPath: string;
   files: Array<{
@@ -267,3 +273,16 @@ export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
   return groups;
 }
 
+export function computeGroupedBlocks(blocks: Block[]): BlockGroup[] {
+  const groups: BlockGroup[] = [];
+  let currentGroup: BlockGroup | null = null;
+  for (const block of blocks) {
+    if (!currentGroup || block.fileName !== currentGroup.fileName) {
+      currentGroup = { fileName: block.fileName, isDeleted: block.isDeleted || false, blocks: [block] };
+      groups.push(currentGroup);
+    } else {
+      currentGroup.blocks.push(block);
+    }
+  }
+  return groups;
+}
