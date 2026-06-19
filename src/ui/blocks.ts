@@ -1,3 +1,8 @@
+// Fenced code block opener: ``` or ~~~ with any leading indentation
+const FENCE_RE = /^( *)(`{3,}|~{3,})/;
+// GFM table delimiter row (e.g. |---|---| or ---|---, indented up to 3 spaces)
+const TABLE_DELIMITER_RE = /^[ \t]*(?:\|)?[ \t]*(?::?-+:?[ \t]*\|[ \t]*)*:?-+:?[ \t]*(?:\|)?[ \t]*$/;
+
 export interface Block {
   type: "file-header" | "hunk" | "diff-line" | "content";
   startLine: number;
@@ -21,21 +26,17 @@ export function groupBlocks(markdown: string): Block[] {
   const blocks: Block[] = [];
   let i = 0;
 
-  // Matches GFM table delimiter rows (e.g. |---|---| or ---|---, indented up to 3 spaces)
-  const delimiterRegex = /^[ \t]*(?:\|)?[ \t]*(?::?-+:?[ \t]*\|[ \t]*)*:?-+:?[ \t]*(?:\|)?[ \t]*$/;
-
   while (i < lines.length) {
     const line = lines[i];
 
-    // Fenced code block: ``` or ~~~ with any leading indentation
-    const fenceMatch = /^( *)(`{3,}|~{3,})/.exec(line);
+    const fenceMatch = FENCE_RE.exec(line);
     if (fenceMatch) {
       const fenceChar = fenceMatch[2][0];
       const fenceLen = fenceMatch[2].length;
       const start = i;
       i++;
       while (i < lines.length) {
-        const closing = /^( *)(`{3,}|~{3,})/.exec(lines[i]);
+        const closing = FENCE_RE.exec(lines[i]);
         if (closing && closing[2][0] === fenceChar && closing[2].length >= fenceLen) {
           i++; // include closing fence
           break;
@@ -52,7 +53,7 @@ export function groupBlocks(markdown: string): Block[] {
     }
 
     // Markdown Table: starts with a header line containing a pipe, followed by a delimiter line
-    if (i + 1 < lines.length && line.includes("|") && lines[i + 1].includes("|") && delimiterRegex.test(lines[i + 1])) {
+    if (i + 1 < lines.length && line.includes("|") && lines[i + 1].includes("|") && TABLE_DELIMITER_RE.test(lines[i + 1])) {
       const start = i;
       i += 2; // skip header and delimiter
       while (i < lines.length) {
@@ -60,7 +61,7 @@ export function groupBlocks(markdown: string): Block[] {
         if (!nextLine.includes("|") || nextLine.trim() === "") {
           break;
         }
-        if (/^( *)(`{3,}|~{3,})/.exec(nextLine)) {
+        if (FENCE_RE.exec(nextLine)) {
           break;
         }
         i++;
