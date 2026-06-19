@@ -204,6 +204,8 @@ export class RpPlanLine extends LitElement {
         const mermaidCode = contentLines.join("\n");
         contentHtml = html`<rp-mermaid .code=${mermaidCode} .theme=${this.theme}></rp-mermaid>`;
       } else {
+        // marked.parse() returns string | Promise<string> but is synchronous
+        // when no async extensions are configured, which is always the case here.
         const rendered = marked.parse(parsed.raw) as string;
         contentHtml = html`${unsafeHTML(rendered)}`;
       }
