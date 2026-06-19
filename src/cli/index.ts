@@ -57,7 +57,7 @@ async function run(): Promise<void> {
   const theme = argv.theme;
   const wrap = argv.wrap;
 
-  let planPath: string;
+  let planPath = "";
   let tmpFile: string | null = null;
   let mode = "plan";
 
@@ -81,9 +81,6 @@ async function run(): Promise<void> {
     tmpFile = path.join(os.tmpdir(), `plan-review-${String(Date.now())}.diff`);
     fs.writeFileSync(tmpFile, content);
     planPath = tmpFile;
-  } else {
-    process.stderr.write(`ai-review: unknown command: ${command}\n`);
-    process.exit(1);
   }
 
   const port = await getPort({ port: preferredPort });
