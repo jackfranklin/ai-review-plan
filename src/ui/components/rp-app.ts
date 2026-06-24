@@ -39,7 +39,6 @@ export class RpApp extends LitElement {
       gap: 0.75rem;
     }
     .title {
-      font-size: 0.9em;
       font-weight: 600;
       color: var(--text);
     }
@@ -50,12 +49,10 @@ export class RpApp extends LitElement {
     }
     .status {
       color: var(--text-muted);
-      font-size: 0.85em;
       margin-right: auto;
     }
     select {
       font: inherit;
-      font-size: 0.85em;
       background: var(--bg-elevated);
       color: var(--text);
       border: 1px solid var(--border);
@@ -65,7 +62,6 @@ export class RpApp extends LitElement {
     }
     button.approve {
       font: inherit;
-      font-size: 0.9em;
       padding: 0.4rem 1.2rem;
       background: var(--approve-bg);
       color: var(--approve-text);
@@ -76,7 +72,6 @@ export class RpApp extends LitElement {
     button.approve:hover { background: var(--approve-hover); }
     button.reject {
       font: inherit;
-      font-size: 0.9em;
       padding: 0.4rem 1.2rem;
       background: var(--reject-bg);
       color: var(--reject-text);
@@ -87,7 +82,6 @@ export class RpApp extends LitElement {
     button.reject:hover { background: var(--reject-hover); }
     button.help {
       font: inherit;
-      font-size: 0.85em;
       padding: 0.2rem 0.6rem;
       background: transparent;
       color: var(--text-muted);
@@ -126,7 +120,6 @@ export class RpApp extends LitElement {
     .shortcut-table td {
       padding: 0.3rem 0;
       color: var(--text-muted);
-      font-size: 0.9em;
     }
     .shortcut-table td:first-child {
       width: 40%;
@@ -136,7 +129,6 @@ export class RpApp extends LitElement {
       display: inline-block;
       padding: 0.1em 0.4em;
       font: inherit;
-      font-size: 0.85em;
       background: var(--bg-elevated);
       border: 1px solid var(--border);
       border-radius: 3px;
@@ -157,7 +149,6 @@ export class RpApp extends LitElement {
       overflow: auto;
       max-height: calc(100vh - 10rem);
       z-index: 20;
-      font-size: 0.85em;
       box-shadow: 0 2px 8px rgba(0,0,0,0.15);
       flex-shrink: 0;
     }
@@ -169,7 +160,6 @@ export class RpApp extends LitElement {
     }
     .file-nav-header h3 {
       margin: 0;
-      font-size: 0.9em;
       color: var(--heading);
     }
     .toggle-sidebar {
@@ -199,7 +189,6 @@ export class RpApp extends LitElement {
       padding: 0.4rem 0.8rem;
       color: var(--text);
       cursor: pointer;
-      font-size: 0.85em;
       margin-bottom: 1rem;
     }
     .toggle-sidebar-expand:hover {
@@ -217,7 +206,6 @@ export class RpApp extends LitElement {
       margin-bottom: 0.75rem;
     }
     .file-group-dir {
-      font-size: 0.8em;
       color: var(--text-muted);
       font-weight: 600;
       padding: 0.2rem 0.5rem;
@@ -302,7 +290,7 @@ export class RpApp extends LitElement {
       border-radius: 4px;
       padding: 0.6rem;
       font-family: inherit;
-      font-size: 0.95rem;
+      font-size: 1rem;
       outline: none;
       box-sizing: border-box;
       margin-top: 0.75rem;
@@ -323,7 +311,6 @@ export class RpApp extends LitElement {
     .verdict-label.reject  { color: var(--reject-bg); }
     button.submit-confirm {
       font: inherit;
-      font-size: 0.9em;
       padding: 0.4rem 1rem;
       border: none;
       border-radius: 4px;
@@ -341,7 +328,6 @@ export class RpApp extends LitElement {
     button.submit-confirm.reject:hover { background: var(--reject-hover); }
     button.submit-cancel {
       font: inherit;
-      font-size: 0.9em;
       padding: 0.4rem 0.8rem;
       background: transparent;
       color: var(--text-muted);
@@ -351,7 +337,6 @@ export class RpApp extends LitElement {
     }
     button.submit-cancel:hover { color: var(--text); border-color: var(--text-muted); }
     .wrap-toggle {
-      font-size: 0.85em;
       color: var(--text-muted);
       display: flex;
       align-items: center;

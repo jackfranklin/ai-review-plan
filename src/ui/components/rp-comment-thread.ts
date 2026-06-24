@@ -38,7 +38,6 @@ export class RpCommentThread extends LitElement {
     }
     button {
       font: inherit;
-      font-size: 0.8em;
       padding: 0.1rem 0.5rem;
       border-radius: 3px;
       cursor: pointer;

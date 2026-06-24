@@ -86,7 +86,6 @@ export class RpPlanLine extends LitElement {
       border: 1px solid var(--code-border);
       padding: 0.1em 0.3em;
       border-radius: 3px;
-      font-size: 0.9em;
     }
     .content pre {
       background: var(--code-bg);
