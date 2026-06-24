@@ -409,7 +409,7 @@ export class RpApp extends LitElement {
   }
 
   private readonly _onBeforeUnload = (e: BeforeUnloadEvent): void => {
-    if (this.comments.length > 0) {
+    if (!this._submitted && this.comments.length > 0) {
       e.preventDefault();
     }
   };
