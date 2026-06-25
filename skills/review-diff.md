@@ -39,7 +39,7 @@ You are presenting a git diff for human review using the ai-review CLI.
    - `lineType` must be `"new"` for added or context lines, or `"old"` for deleted lines. This disambiguates the line numbers when old and new sides overlap.
    - `startLine` and `endLine` are **source-file line numbers** from the diff hunk headers (`@@ -old +new @@`). Use the new-file line numbers when `lineType` is `"new"`, and old-file line numbers when `lineType` is `"old"`.
    - To find the exact line numbers: read the `@@ -old,count +new,count @@` header; the first context or changed line after it starts at the indicated new/old line number. Count forward from there.
-   - Read the written file back and verify the line numbers look correct before proceeding.
+   - Read the written file back and verify the line numbers look correct before proceeding. If annotations don't appear in the review UI, they were silently dropped with no error — check that `file` exactly matches the path after `+++ b/` in the diff, and that line numbers fall within the rendered hunk.
    - On a re-review after changes requested: mention in the summary which prior feedback you addressed and how.
 
 3. Run the CLI, piping the diff to stdin:

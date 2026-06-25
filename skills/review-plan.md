@@ -33,7 +33,8 @@ You are presenting a plan for human review using the ai-review CLI.
    - `annotations` is optional; include only lines worth drawing the reviewer's attention to.
    - Do **not** include a `file` field — plan mode uses plain line numbers only.
    - `startLine` and `endLine` are **1-indexed line numbers in the plan file**. To get accurate numbers: read the written plan file back with line numbers (e.g. `cat -n .jai/tmp/plan-<timestamp>.md`), then reference the specific lines.
-   - Read the written annotations file back and verify line numbers look correct before proceeding.
+   - Fenced code blocks and tables are treated as a single block. Annotating any line inside a code fence attaches the annotation to the opening ` ``` ` line. If you want to annotate content within a fence, use the line number of the opening fence.
+   - Read the written annotations file back and verify line numbers look correct before proceeding. If annotations don't appear in the review UI, they were silently dropped with no error — check that line numbers fall within the rendered content.
    - On a re-review: annotate each section that changed and explain which prior feedback it addresses.
 
 3. Run the CLI with a title and theme. Choose a title that is short (3–6 words)

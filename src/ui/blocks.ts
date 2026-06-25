@@ -276,6 +276,19 @@ export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
   return groups;
 }
 
+/**
+ * Maps each annotation to the block it should appear beneath, keyed by block.startLine.
+ *
+ * Plan mode: finds the block whose [startLine, endLine] contains annotation.startLine.
+ * Falls back to the nearest block with startLine >= annotation.startLine to handle
+ * annotations that land in parser-stripped gaps (blank lines, etc.).
+ *
+ * Diff mode: each Block carries a single line number, so the containment check is
+ * inverted — we ask whether the block's line falls inside the annotation's [startLine,
+ * endLine] range. lineType selects which side (oldLine vs newLine) to match against.
+ *
+ * Annotations with no matching block are silently dropped.
+ */
 export function mapAnnotationsToBlocks(
   annotations: AiAnnotation[],
   blocks: Block[],
