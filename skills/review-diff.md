@@ -25,6 +25,7 @@ You are presenting a git diff for human review using the ai-review CLI.
          "file": "src/path/to/file.ts",
          "startLine": 42,
          "endLine": 45,
+         "lineType": "new",
          "text": "What changed on these lines and the reason."
        }
      ]
@@ -35,7 +36,8 @@ You are presenting a git diff for human review using the ai-review CLI.
    - `summary` is optional but strongly recommended; write it if you have useful context.
    - `annotations` is optional; include only lines worth drawing the reviewer's attention to.
    - `file` must match the path exactly as it appears after `+++ b/` in the diff (e.g. `src/foo.ts`, not `./src/foo.ts`).
-   - `startLine` and `endLine` are **source-file line numbers** from the diff hunk headers (`@@ -old +new @@`). Use the new-file line numbers for added/context lines, old-file line numbers for deleted lines.
+   - `lineType` must be `"new"` for added or context lines, or `"old"` for deleted lines. This disambiguates the line numbers when old and new sides overlap.
+   - `startLine` and `endLine` are **source-file line numbers** from the diff hunk headers (`@@ -old +new @@`). Use the new-file line numbers when `lineType` is `"new"`, and old-file line numbers when `lineType` is `"old"`.
    - To find the exact line numbers: read the `@@ -old,count +new,count @@` header; the first context or changed line after it starts at the indicated new/old line number. Count forward from there.
    - Read the written file back and verify the line numbers look correct before proceeding.
    - On a re-review after changes requested: mention in the summary which prior feedback you addressed and how.

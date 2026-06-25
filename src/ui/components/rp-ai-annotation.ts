@@ -31,8 +31,8 @@ export class RpAiAnnotation extends LitElement {
 
   override render() {
     return html`
-      <div class="annotation" role="note" aria-label="AI annotation">
-        <div class="header" aria-hidden="true">AI Annotation</div>
+      <div class="annotation" role="note">
+        <div class="header">AI Annotation</div>
         <span class="text">${this.annotation.text}</span>
       </div>
     `;

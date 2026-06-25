@@ -269,11 +269,22 @@ describe("mapAnnotationsToBlocks", () => {
       expect(map.get(2)).toEqual([annotation]);
     });
 
-    it("falls back to the first block with startLine >= annotation.startLine when no exact match", () => {
+    it("maps an annotation whose startLine falls on a single-line block", () => {
       const blocks = groupBlocks("line1\nline2\nline3");
       const annotation: AiAnnotation = { startLine: 1, endLine: 2, text: "spans two lines" };
       const map = mapAnnotationsToBlocks([annotation], blocks, "plan");
       expect(map.get(1)).toEqual([annotation]);
+    });
+
+    it("falls back to the next block when startLine falls between blocks", () => {
+      // Manually build blocks with a gap at line 2 to force the fallback path
+      const blocks: Block[] = [
+        { type: "content", startLine: 1, endLine: 1, raw: "line1" },
+        { type: "content", startLine: 3, endLine: 3, raw: "line3" },
+      ];
+      const annotation: AiAnnotation = { startLine: 2, endLine: 2, text: "in the gap" };
+      const map = mapAnnotationsToBlocks([annotation], blocks, "plan");
+      expect(map.get(3)).toEqual([annotation]);
     });
 
     it("returns an empty map when no block matches", () => {
@@ -304,15 +315,22 @@ describe("mapAnnotationsToBlocks", () => {
       "+new line",
     ].join("\n");
 
-    it("maps annotation to the first block matching file + source line", () => {
+    it("maps an old-line annotation to the deleted block", () => {
       const blocks = parseDiff(diffText);
-      const annotation: AiAnnotation = { file: "src/foo.ts", startLine: 39, endLine: 39, text: "changed here" };
+      const annotation: AiAnnotation = { file: "src/foo.ts", startLine: 39, endLine: 39, lineType: "old", text: "changed here" };
       const map = mapAnnotationsToBlocks([annotation], blocks, "diff");
       const matchedBlock = blocks.find(b => b.fileName === "src/foo.ts" && b.oldLine === 39);
       expect(matchedBlock).toBeDefined();
-      if (matchedBlock) {
-        expect(map.get(matchedBlock.startLine)).toEqual([annotation]);
-      }
+      expect(map.get(matchedBlock!.startLine)).toEqual([annotation]);
+    });
+
+    it("maps a new-line annotation to the added block", () => {
+      const blocks = parseDiff(diffText);
+      const annotation: AiAnnotation = { file: "src/foo.ts", startLine: 39, endLine: 39, lineType: "new", text: "new line here" };
+      const map = mapAnnotationsToBlocks([annotation], blocks, "diff");
+      const matchedBlock = blocks.find(b => b.fileName === "src/foo.ts" && b.newLine === 39);
+      expect(matchedBlock).toBeDefined();
+      expect(map.get(matchedBlock!.startLine)).toEqual([annotation]);
     });
 
     it("ignores annotations for files not in the diff", () => {

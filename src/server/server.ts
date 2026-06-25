@@ -20,6 +20,7 @@ export interface AiAnnotation {
   file?: string;
   startLine: number;
   endLine: number;
+  lineType?: "new" | "old";
   text: string;
 }
 

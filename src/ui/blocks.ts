@@ -294,15 +294,17 @@ export function mapAnnotationsToBlocks(
             annotation.startLine <= b.endLine
         ) ?? blocks.find((b) => b.startLine >= annotation.startLine);
     } else {
+      const useOld = annotation.lineType === "old";
       targetBlock = blocks.find(
         (b) =>
           b.fileName === annotation.file &&
-          ((b.newLine !== undefined &&
-            b.newLine >= annotation.startLine &&
-            b.newLine <= annotation.endLine) ||
-            (b.oldLine !== undefined &&
+          (useOld
+            ? b.oldLine !== undefined &&
               b.oldLine >= annotation.startLine &&
-              b.oldLine <= annotation.endLine))
+              b.oldLine <= annotation.endLine
+            : b.newLine !== undefined &&
+              b.newLine >= annotation.startLine &&
+              b.newLine <= annotation.endLine)
       );
     }
 

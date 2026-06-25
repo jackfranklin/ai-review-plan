@@ -760,8 +760,8 @@ export class RpApp extends LitElement {
           @comment-delete=${this._onCommentDelete}
         >
           ${this._aiSummary ? html`
-            <div class="ai-summary" role="note" aria-label="AI summary">
-              <div class="ai-summary-header" aria-hidden="true">AI Summary</div>
+            <div class="ai-summary" role="note">
+              <div class="ai-summary-header">AI Summary</div>
               <div class="ai-summary-text">${this._aiSummary}</div>
             </div>
           ` : ""}
