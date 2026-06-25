@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createServer } from "../server/server.js";
+import type { AiAnnotationsFile } from "../server/server.js";
 import { formatOutput } from "./format.js";
 import getPort from "get-port";
 import open from "open";
@@ -48,6 +49,10 @@ async function run(): Promise<void> {
       default: false,
       describe: "Include the full annotated plan/diff in the output (comments-only by default)",
     })
+    .option("ai-annotations-file", {
+      type: "string",
+      describe: "Path to JSON file with AI annotations ({ summary?, annotations? })",
+    })
     .help()
     .parseAsync();
 
@@ -83,13 +88,28 @@ async function run(): Promise<void> {
     planPath = tmpFile;
   }
 
+  let aiAnnotationsData: AiAnnotationsFile | undefined;
+  const annotationsFile = argv["ai-annotations-file"] as string | undefined;
+  if (annotationsFile) {
+    if (!fs.existsSync(annotationsFile)) {
+      process.stderr.write(`ai-review: ai-annotations-file not found: ${annotationsFile}\n`);
+      process.exit(1);
+    }
+    try {
+      aiAnnotationsData = JSON.parse(fs.readFileSync(annotationsFile, "utf-8")) as AiAnnotationsFile;
+    } catch (err) {
+      process.stderr.write(`ai-review: failed to parse ai-annotations-file: ${String(err)}\n`);
+      process.exit(1);
+    }
+  }
+
   const port = await getPort({ port: preferredPort });
 
   const uiHtml =
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode, wrap);
+  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
   server.listen(port);
 
   const url = `http://localhost:${String(port)}`;
