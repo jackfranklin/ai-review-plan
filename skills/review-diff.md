@@ -13,16 +13,51 @@ You are presenting a git diff for human review using the ai-review CLI.
    for all uncommitted changes use `git diff HEAD`; for a specific range use
    `git diff <base>..<head>`.
    **Note**: Run `git add -N .` first to include untracked files in the diff. This records the intent to add the files, making them visible to `git diff` without fully staging them.
-2. Run the CLI, piping the diff to stdin:
+
+2. **Generate AI annotations.** Before opening the review, write a JSON file with a summary and any per-line notes you want the reviewer to see. This gives context on what changed and why.
+
+   Write the file to `.jai/tmp/annotations-<timestamp>.json` (create the directory if needed) using this schema:
+   ```json
+   {
+     "summary": "One or two sentences describing what changed and why.",
+     "annotations": [
+       {
+         "file": "src/path/to/file.ts",
+         "startLine": 42,
+         "endLine": 45,
+         "text": "What changed on these lines and the reason."
+       }
+     ]
+   }
    ```
-   git diff HEAD | ai-review diff --title "<short task-specific title>" --theme <dark|light>
+
+   Rules for generating annotations:
+   - `summary` is optional but strongly recommended; write it if you have useful context.
+   - `annotations` is optional; include only lines worth drawing the reviewer's attention to.
+   - `file` must match the path exactly as it appears after `+++ b/` in the diff (e.g. `src/foo.ts`, not `./src/foo.ts`).
+   - `startLine` and `endLine` are **source-file line numbers** from the diff hunk headers (`@@ -old +new @@`). Use the new-file line numbers for added/context lines, old-file line numbers for deleted lines.
+   - To find the exact line numbers: read the `@@ -old,count +new,count @@` header; the first context or changed line after it starts at the indicated new/old line number. Count forward from there.
+   - Read the written file back and verify the line numbers look correct before proceeding.
+   - On a re-review after changes requested: mention in the summary which prior feedback you addressed and how.
+
+3. Run the CLI, piping the diff to stdin:
+   ```
+   git diff HEAD | node ~/git/ai-review-plan/dist/cli.js diff \
+     --title "<short task-specific title>" \
+     --theme <dark|light> \
+     --ai-annotations-file .jai/tmp/annotations-<timestamp>.json
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
-3. Wait for the CLI to exit. It blocks until the user submits their review.
-4. Check the exit code and stdout:
+
+4. Wait for the CLI to exit. It blocks until the user submits their review.
+
+5. Check the exit code and stdout:
    - **Exit 0 (Approved):** The user approved the diff. Address any inline comments in code, then proceed.
    - **Exit 1 (Changes Requested):** The user requested changes. Do not commit or push. Show the user the comments from stdout, address them in code, and offer to run another review pass.
-5. The stdout always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully.
+
+6. The stdout always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully.
+
+7. Delete the temporary annotations file.
 
 ## Notes
 
