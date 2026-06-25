@@ -498,6 +498,7 @@ export class RpApp extends LitElement {
         this._moveFocus(-1);
         break;
       case "c":
+        e.preventDefault();
         this.openCommentLine = this.focusedLine;
         break;
       case "n":
