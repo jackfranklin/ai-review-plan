@@ -1,0 +1,17 @@
+{
+  "summary": "Two files changed: app.ts replaces the placeholder render output; styles.css adds flex-direction to the container.",
+  "annotations": [
+    {
+      "file": "src/ui/app.ts",
+      "startLine": 13,
+      "endLine": 13,
+      "text": "The intentionally long class name is there to exercise line-wrap behaviour in the review UI — not production code."
+    },
+    {
+      "file": "src/ui/styles.css",
+      "startLine": 3,
+      "endLine": 3,
+      "text": "Added flex-direction: column so child elements stack vertically by default."
+    }
+  ]
+}

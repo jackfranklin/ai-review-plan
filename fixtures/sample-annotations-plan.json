@@ -1,0 +1,15 @@
+{
+  "summary": "This plan adds dark mode support to the dashboard. Phase 1 introduces CSS custom properties; Phase 2 wires up the toggle and persistence.",
+  "annotations": [
+    {
+      "startLine": 15,
+      "endLine": 32,
+      "text": "Phase 1 is the most mechanical part — auditing and replacing hardcoded colours. The CSS snippet here is the target shape; the actual values were agreed with design."
+    },
+    {
+      "startLine": 1,
+      "endLine": 1,
+      "text": "Scope is dashboard only for now. Mobile nav is excluded pending a separate design pass."
+    }
+  ]
+}
