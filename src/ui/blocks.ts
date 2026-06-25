@@ -274,6 +274,47 @@ export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
   return groups;
 }
 
+import type { AiAnnotation } from "./types.js";
+
+export function mapAnnotationsToBlocks(
+  annotations: AiAnnotation[],
+  blocks: Block[],
+  mode: "plan" | "diff"
+): Map<number, AiAnnotation[]> {
+  const result = new Map<number, AiAnnotation[]>();
+
+  for (const annotation of annotations) {
+    let targetBlock: Block | undefined;
+
+    if (mode === "plan") {
+      targetBlock =
+        blocks.find(
+          (b) =>
+            b.startLine <= annotation.startLine &&
+            annotation.startLine <= b.endLine
+        ) ?? blocks.find((b) => b.startLine >= annotation.startLine);
+    } else {
+      targetBlock = blocks.find(
+        (b) =>
+          b.fileName === annotation.file &&
+          ((b.newLine !== undefined &&
+            b.newLine >= annotation.startLine &&
+            b.newLine <= annotation.endLine) ||
+            (b.oldLine !== undefined &&
+              b.oldLine >= annotation.startLine &&
+              b.oldLine <= annotation.endLine))
+      );
+    }
+
+    if (targetBlock) {
+      const existing = result.get(targetBlock.startLine) ?? [];
+      result.set(targetBlock.startLine, [...existing, annotation]);
+    }
+  }
+
+  return result;
+}
+
 export function computeGroupedBlocks(blocks: Block[]): BlockGroup[] {
   const groups: BlockGroup[] = [];
   let currentGroup: BlockGroup | null = null;
