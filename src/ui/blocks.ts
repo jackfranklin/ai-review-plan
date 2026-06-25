@@ -1,3 +1,5 @@
+import type { AiAnnotation } from "./types.js";
+
 // Fenced code block opener: ``` or ~~~ with any leading indentation
 const FENCE_RE = /^( *)(`{3,}|~{3,})/;
 // GFM table delimiter row (e.g. |---|---| or ---|---, indented up to 3 spaces)
@@ -274,8 +276,6 @@ export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
   return groups;
 }
 
-import type { AiAnnotation } from "./types.js";
-
 export function mapAnnotationsToBlocks(
   annotations: AiAnnotation[],
   blocks: Block[],
@@ -307,8 +307,13 @@ export function mapAnnotationsToBlocks(
     }
 
     if (targetBlock) {
-      const existing = result.get(targetBlock.startLine) ?? [];
-      result.set(targetBlock.startLine, [...existing, annotation]);
+      const key = targetBlock.startLine;
+      const list = result.get(key);
+      if (list !== undefined) {
+        list.push(annotation);
+      } else {
+        result.set(key, [annotation]);
+      }
     }
   }
 

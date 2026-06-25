@@ -62,6 +62,7 @@ You are presenting a plan for human review using the ai-review CLI.
 
 - Always pass `--title`. Derive it from the current conversation (e.g. "Auth middleware refactor", "Add dark mode", "DB migration plan") — never use a generic title like "Plan review".
 - Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
+- Pass `--no-wrap` to disable line wrapping if you prefer lines to overflow with a scrollbar. Line wrapping is enabled by default.
 - Do not proceed with execution until after review is complete and the verdict is Approved.
 - If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
 - **Diagrams**: Use Mermaid diagrams (e.g. `sequenceDiagram`, `flowchart TD`, `stateDiagram-v2` in a fenced code block with language `mermaid`) when explaining complex interactions, database schemas, architectures, or step-by-step processes to make the plan easier to review.

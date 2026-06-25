@@ -14,6 +14,8 @@ export interface ReviewResult {
   verdict: Verdict;
 }
 
+// NOTE: AiAnnotation and AiAnnotationsFile are mirrored in src/ui/types.ts.
+// Keep them in sync — they can't share a source due to separate tsconfig rootDirs.
 export interface AiAnnotation {
   file?: string;
   startLine: number;

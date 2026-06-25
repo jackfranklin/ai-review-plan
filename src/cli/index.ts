@@ -89,7 +89,7 @@ async function run(): Promise<void> {
   }
 
   let aiAnnotationsData: AiAnnotationsFile | undefined;
-  const annotationsFile = argv["ai-annotations-file"] as string | undefined;
+  const annotationsFile = argv["ai-annotations-file"];
   if (annotationsFile) {
     if (!fs.existsSync(annotationsFile)) {
       process.stderr.write(`ai-review: ai-annotations-file not found: ${annotationsFile}\n`);
