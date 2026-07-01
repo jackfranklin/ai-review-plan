@@ -1,6 +1,7 @@
 import http from "node:http";
 import fs from "node:fs";
 import type { AiAnnotationsFile } from "../types/annotation.js";
+import type { PlanUpdatePayload } from "../types/interactive.js";
 
 export interface Comment {
   startLine: number;
@@ -22,6 +23,35 @@ export interface CreateServerOptions {
   interactive?: boolean;
 }
 
+export interface ServerHandle {
+  server: http.Server;
+  waitForSubmit: () => Promise<ReviewResult>;
+}
+
+export interface InteractiveServerHandle extends ServerHandle {
+  broadcastUpdate: (payload: PlanUpdatePayload) => void;
+}
+
+export function createServer(
+  planPath: string,
+  uiHtml: string,
+  title: string | undefined,
+  theme: string | undefined,
+  mode: string | undefined,
+  wrap: boolean | undefined,
+  aiAnnotations: AiAnnotationsFile | undefined,
+  opts: { interactive: true }
+): InteractiveServerHandle;
+export function createServer(
+  planPath: string,
+  uiHtml: string,
+  title?: string,
+  theme?: string,
+  mode?: string,
+  wrap?: boolean,
+  aiAnnotations?: AiAnnotationsFile,
+  opts?: { interactive?: false }
+): ServerHandle;
 export function createServer(
   planPath: string,
   uiHtml: string,
@@ -31,13 +61,19 @@ export function createServer(
   wrap?: boolean,
   aiAnnotations?: AiAnnotationsFile,
   opts?: CreateServerOptions
-): { server: http.Server; waitForSubmit: () => Promise<ReviewResult> } {
+): ServerHandle | InteractiveServerHandle {
   const interactive = !!opts?.interactive;
+  const sseConnections = new Set<http.ServerResponse>();
 
   let resolveSubmit!: (result: ReviewResult) => void;
   const submitPromise = new Promise<ReviewResult>((resolve) => {
     resolveSubmit = resolve;
   });
+
+  function broadcastUpdate(payload: PlanUpdatePayload): void {
+    const data = `data: ${JSON.stringify(payload)}\n\n`;
+    for (const res of sseConnections) res.write(data);
+  }
 
   const server = http.createServer((req, res) => {
     if (req.method === "GET" && req.url === "/") {
@@ -53,6 +89,20 @@ export function createServer(
       if (aiAnnotations?.annotations?.length) payload.aiAnnotations = aiAnnotations.annotations;
       res.writeHead(200, { "Content-Type": "application/json" });
       res.end(JSON.stringify(payload));
+      return;
+    }
+
+    if (req.method === "GET" && req.url === "/events") {
+      res.writeHead(200, {
+        "Content-Type": "text/event-stream",
+        "Cache-Control": "no-cache",
+        "Connection": "keep-alive",
+      });
+      res.write("\n");
+      sseConnections.add(res);
+      req.on("close", () => {
+        sseConnections.delete(res);
+      });
       return;
     }
 
@@ -77,5 +127,7 @@ export function createServer(
     res.end("Not found");
   });
 
-  return { server, waitForSubmit: () => submitPromise };
+  const handle: ServerHandle = { server, waitForSubmit: () => submitPromise };
+  if (!interactive) return handle;
+  return { ...handle, broadcastUpdate };
 }
