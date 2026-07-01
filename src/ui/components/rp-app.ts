@@ -396,6 +396,7 @@ export class RpApp extends LitElement {
   @state() private _interactive = false;
   @state() private reviewStatus: "reviewing" | "waiting" = "reviewing";
   @state() private previousRounds: Array<{ comments: Comment[]; aiSummary: string }> = [];
+  private _eventSource: EventSource | null = null;
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -408,7 +409,9 @@ export class RpApp extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    void this._fetchPlan();
+    void this._fetchPlan().then(() => {
+      if (this._interactive) this._connectEvents();
+    });
     window.addEventListener("keydown", this._onKeydown);
     window.addEventListener("beforeunload", this._onBeforeUnload);
     const collapsed = localStorage.getItem("ai-review:sidebar-collapsed");
@@ -419,6 +422,16 @@ export class RpApp extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener("keydown", this._onKeydown);
     window.removeEventListener("beforeunload", this._onBeforeUnload);
+    this._eventSource?.close();
+  }
+
+  private _connectEvents(): void {
+    this._eventSource = new EventSource("/events");
+    this._eventSource.onmessage = (e: MessageEvent<string>) => {
+      const data = JSON.parse(e.data) as { markdown: string; aiSummary?: string; aiAnnotations?: AiAnnotation[] };
+      this._applyPlanData(data);
+      this.reviewStatus = "reviewing";
+    };
   }
 
   override updated(changed: Map<PropertyKey, unknown>): void {
