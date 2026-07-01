@@ -18,6 +18,10 @@ export interface ReviewResult {
 export type { AiAnnotation, AiAnnotationsFile } from "../types/annotation.js";
 export type { PlanUpdatePayload, SubmitStatus } from "../types/interactive.js";
 
+export interface CreateServerOptions {
+  interactive?: boolean;
+}
+
 export function createServer(
   planPath: string,
   uiHtml: string,
@@ -25,8 +29,11 @@ export function createServer(
   theme = "dark",
   mode = "plan",
   wrap?: boolean,
-  aiAnnotations?: AiAnnotationsFile
+  aiAnnotations?: AiAnnotationsFile,
+  opts?: CreateServerOptions
 ): { server: http.Server; waitForSubmit: () => Promise<ReviewResult> } {
+  const interactive = !!opts?.interactive;
+
   let resolveSubmit!: (result: ReviewResult) => void;
   const submitPromise = new Promise<ReviewResult>((resolve) => {
     resolveSubmit = resolve;
@@ -41,7 +48,7 @@ export function createServer(
 
     if (req.method === "GET" && req.url === "/plan") {
       const markdown = fs.readFileSync(planPath, "utf-8");
-      const payload: Record<string, unknown> = { markdown, title, theme, mode, wrap };
+      const payload: Record<string, unknown> = { markdown, title, theme, mode, wrap, interactive };
       if (aiAnnotations?.summary) payload.aiSummary = aiAnnotations.summary;
       if (aiAnnotations?.annotations?.length) payload.aiAnnotations = aiAnnotations.annotations;
       res.writeHead(200, { "Content-Type": "application/json" });
