@@ -2,8 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createServer } from "../server/server.js";
-import type { AiAnnotationsFile, ServerHandle, InteractiveServerHandle } from "../server/server.js";
+import type { AiAnnotationsFile, PlanUpdatePayload, ServerHandle, InteractiveServerHandle } from "../server/server.js";
 import { formatOutput } from "./format.js";
+import { debounce } from "./debounce.js";
 import getPort from "get-port";
 import open from "open";
 import { UI_HTML } from "./ui-html.js";
@@ -123,9 +124,14 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const handle: ServerHandle | InteractiveServerHandle = interactive
-    ? createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData, { interactive: true })
-    : createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  let handle: ServerHandle;
+  let interactiveHandle: InteractiveServerHandle | undefined;
+  if (interactive) {
+    interactiveHandle = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData, { interactive: true });
+    handle = interactiveHandle;
+  } else {
+    handle = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  }
   const { server, waitForSubmit } = handle;
   server.listen(port);
 
@@ -138,8 +144,25 @@ async function run(): Promise<void> {
     process.stderr.write(`Could not open browser automatically. Visit: ${url}\n`);
   }
 
-  if (interactive) {
+  if (interactiveHandle) {
     process.stdout.write(`Watching: ${planPath}\n`);
+
+    const broadcastLatest = debounce(() => {
+      const payload: PlanUpdatePayload = { markdown: fs.readFileSync(planPath, "utf-8") };
+      if (annotationsFile && fs.existsSync(annotationsFile)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(annotationsFile, "utf-8")) as AiAnnotationsFile;
+          if (data.summary) payload.aiSummary = data.summary;
+          if (data.annotations?.length) payload.aiAnnotations = data.annotations;
+        } catch {
+          // Malformed annotations mid-write; skip this broadcast and wait for the next change.
+        }
+      }
+      interactiveHandle.broadcastUpdate(payload);
+    }, 200);
+
+    fs.watch(planPath, broadcastLatest);
+    if (annotationsFile) fs.watch(annotationsFile, broadcastLatest);
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");
