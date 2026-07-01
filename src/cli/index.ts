@@ -53,6 +53,12 @@ async function run(): Promise<void> {
       type: "string",
       describe: "Path to JSON file with AI annotations ({ summary?, annotations? })",
     })
+    .option("interactive", {
+      alias: "i",
+      type: "boolean",
+      default: false,
+      describe: "Keep the server running and stream plan updates as an AI agent revises the file",
+    })
     .help()
     .parseAsync();
 
@@ -61,6 +67,14 @@ async function run(): Promise<void> {
   const title = argv.title;
   const theme = argv.theme;
   const wrap = argv.wrap;
+  const interactive = argv.interactive;
+
+  if (interactive && (command === "diff" || !argv.file)) {
+    process.stderr.write(
+      "ai-review: --interactive requires a plan file argument (an AI agent needs a real file to revise); it cannot be combined with stdin input.\n"
+    );
+    process.exit(1);
+  }
 
   let planPath = "";
   let tmpFile: string | null = null;
