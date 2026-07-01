@@ -28,8 +28,18 @@ export interface ServerHandle {
   waitForSubmit: () => Promise<ReviewResult>;
 }
 
+export type SessionEndReason = "disconnected";
+
 export interface InteractiveServerHandle extends ServerHandle {
   broadcastUpdate: (payload: PlanUpdatePayload) => void;
+  onSessionEnd: (cb: (reason: SessionEndReason) => void) => void;
+}
+
+let disconnectGraceMs = 30_000;
+
+/** Test-only hook to avoid waiting out the real grace period in tests. */
+export function __setDisconnectGraceMsForTests(ms: number): void {
+  disconnectGraceMs = ms;
 }
 
 export function createServer(
@@ -64,6 +74,8 @@ export function createServer(
 ): ServerHandle | InteractiveServerHandle {
   const interactive = !!opts?.interactive;
   const sseConnections = new Set<http.ServerResponse>();
+  const sessionEndCallbacks: Array<(reason: SessionEndReason) => void> = [];
+  let disconnectGraceTimer: NodeJS.Timeout | null = null;
 
   let resolveSubmit!: (result: ReviewResult) => void;
   const submitPromise = new Promise<ReviewResult>((resolve) => {
@@ -73,6 +85,10 @@ export function createServer(
   function broadcastUpdate(payload: PlanUpdatePayload): void {
     const data = `data: ${JSON.stringify(payload)}\n\n`;
     for (const res of sseConnections) res.write(data);
+  }
+
+  function onSessionEnd(cb: (reason: SessionEndReason) => void): void {
+    sessionEndCallbacks.push(cb);
   }
 
   const server = http.createServer((req, res) => {
@@ -100,8 +116,17 @@ export function createServer(
       });
       res.write("\n");
       sseConnections.add(res);
+      if (disconnectGraceTimer) {
+        clearTimeout(disconnectGraceTimer);
+        disconnectGraceTimer = null;
+      }
       req.on("close", () => {
         sseConnections.delete(res);
+        if (interactive && sseConnections.size === 0) {
+          disconnectGraceTimer = setTimeout(() => {
+            for (const cb of sessionEndCallbacks) cb("disconnected");
+          }, disconnectGraceMs);
+        }
       });
       return;
     }
@@ -129,5 +154,5 @@ export function createServer(
 
   const handle: ServerHandle = { server, waitForSubmit: () => submitPromise };
   if (!interactive) return handle;
-  return { ...handle, broadcastUpdate };
+  return { ...handle, broadcastUpdate, onSessionEnd };
 }

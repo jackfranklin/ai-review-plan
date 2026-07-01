@@ -3,12 +3,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
-import { createServer } from "./server.js";
+import { createServer, __setDisconnectGraceMsForTests } from "./server.js";
 
 function tmpPlanFile(content = "# Plan\n"): string {
   const file = path.join(os.tmpdir(), `server-test-${String(Date.now())}-${String(Math.random())}.md`);
   fs.writeFileSync(file, content);
   return file;
+}
+
+// Undici keeps cancelled/aborted client connections pooled for its own
+// keep-alive timeout, which otherwise makes server.close() wait several
+// seconds for the socket to actually go away.
+function closeServer(server: import("node:http").Server): Promise<void> {
+  server.closeAllConnections();
+  return new Promise((resolve) => { server.close(() => { resolve(); }); });
 }
 
 describe("createServer interactive /events", () => {
@@ -29,7 +37,7 @@ describe("createServer interactive /events", () => {
     expect(res.headers.get("content-type")).toBe("text/event-stream");
 
     controller.abort();
-    await new Promise<void>((resolve) => { server.close(() => { resolve(); }); });
+    await closeServer(server);
   });
 
   it("broadcastUpdate writes to connected SSE clients", async () => {
@@ -55,6 +63,58 @@ describe("createServer interactive /events", () => {
     expect(chunk).toContain("Updated");
 
     controller.abort();
-    await new Promise<void>((resolve) => { server.close(() => { resolve(); }); });
+    await closeServer(server);
+  });
+});
+
+describe("createServer disconnect grace timer", () => {
+  let planFile: string;
+
+  afterEach(() => {
+    if (planFile) fs.rmSync(planFile, { force: true });
+    __setDisconnectGraceMsForTests(30_000);
+  });
+
+  it("fires onSessionEnd after the grace period once all clients disconnect", async () => {
+    __setDisconnectGraceMsForTests(30);
+    planFile = tmpPlanFile();
+    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const reasons: string[] = [];
+    onSessionEnd((reason) => reasons.push(reason));
+
+    const res = await fetch(`http://localhost:${String(port)}/events`);
+    await res.body?.cancel();
+
+    expect(reasons).toEqual([]);
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(reasons).toEqual(["disconnected"]);
+
+    await closeServer(server);
+  });
+
+  it("cancels the grace timer if a client reconnects in time", async () => {
+    __setDisconnectGraceMsForTests(50);
+    planFile = tmpPlanFile();
+    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const reasons: string[] = [];
+    onSessionEnd((reason) => reasons.push(reason));
+
+    const first = await fetch(`http://localhost:${String(port)}/events`);
+    await first.body?.cancel();
+
+    // Reconnect well before the (short, test-only) grace period elapses.
+    const second = await fetch(`http://localhost:${String(port)}/events`);
+
+    await new Promise((resolve) => setTimeout(resolve, 100));
+    expect(reasons).toEqual([]);
+
+    await second.body?.cancel();
+    await closeServer(server);
   });
 });
