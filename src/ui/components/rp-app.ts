@@ -47,6 +47,20 @@ export class RpApp extends LitElement {
       margin: 0 0.5rem;
       color: var(--text-subtle);
     }
+    .mode-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .mode-badge.interactive {
+      color: var(--accent);
+      border-color: var(--accent);
+    }
     .status {
       color: var(--text-muted);
       margin-right: auto;
@@ -902,6 +916,12 @@ export class RpApp extends LitElement {
       </div>
       <div class="toolbar">
         ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
+        <span class="mode-badge ${this._interactive ? "interactive" : ""}"
+          title=${this._interactive
+            ? "Interactive: the agent can revise this file and push updates without restarting"
+            : "Static: this is a one-time snapshot; ends when you submit"}
+          >${this._interactive ? "Interactive" : "Static"}</span
+        >
         <span class="status"
           >${this.comments.length === 0
             ? "No comments yet"
