@@ -163,6 +163,24 @@ async function run(): Promise<void> {
 
     fs.watch(planPath, broadcastLatest);
     if (annotationsFile) fs.watch(annotationsFile, broadcastLatest);
+
+    interactiveHandle.onReviewRound((result) => {
+      const currentContent = fs.readFileSync(planPath, "utf-8");
+      process.stdout.write(formatOutput(currentContent, result.comments, result.verdict, argv["include-plan"]));
+      if (result.verdict === "approve") {
+        server.close();
+        process.exit(0);
+      }
+      process.stdout.write("=== FEEDBACK END ===\n");
+    });
+
+    interactiveHandle.onSessionEnd(() => {
+      process.stdout.write("=== SESSION CLOSED: client disconnected ===\n");
+      server.close();
+      process.exit(1);
+    });
+
+    return;
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");
