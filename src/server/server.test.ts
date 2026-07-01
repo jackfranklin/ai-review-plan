@@ -118,3 +118,78 @@ describe("createServer disconnect grace timer", () => {
     await closeServer(server);
   });
 });
+
+describe("createServer /submit", () => {
+  let planFile: string;
+
+  afterEach(() => {
+    if (planFile) fs.rmSync(planFile, { force: true });
+  });
+
+  it("non-interactive: resolves waitForSubmit and responds { ok: true } regardless of verdict", async () => {
+    planFile = tmpPlanFile();
+    const { server, waitForSubmit } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined);
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const resultPromise = waitForSubmit();
+    const res = await fetch(`http://localhost:${String(port)}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comments: [], verdict: "reject" }),
+    });
+    const body = await res.json() as { ok?: boolean };
+    expect(body).toEqual({ ok: true });
+    expect(await resultPromise).toEqual({ comments: [], verdict: "reject" });
+
+    await closeServer(server);
+  });
+
+  it("interactive: reject invokes onReviewRound, responds waiting_for_updates, and keeps the server alive", async () => {
+    planFile = tmpPlanFile();
+    const { server, onReviewRound } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const rounds: unknown[] = [];
+    onReviewRound((result) => rounds.push(result));
+
+    const res = await fetch(`http://localhost:${String(port)}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comments: [{ startLine: 1, endLine: 1, text: "fix this" }], verdict: "reject" }),
+    });
+    const body = await res.json() as { status?: string };
+    expect(body).toEqual({ status: "waiting_for_updates" });
+    expect(rounds).toEqual([{ comments: [{ startLine: 1, endLine: 1, text: "fix this" }], verdict: "reject" }]);
+
+    // The server should still be listening for further requests.
+    const res2 = await fetch(`http://localhost:${String(port)}/plan`);
+    expect(res2.status).toBe(200);
+
+    await closeServer(server);
+  });
+
+  it("interactive: approve invokes onReviewRound, resolves waitForSubmit, and responds closing", async () => {
+    planFile = tmpPlanFile();
+    const { server, onReviewRound, waitForSubmit } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    await new Promise<void>((resolve) => server.listen(0, resolve));
+    const port = (server.address() as AddressInfo).port;
+
+    const rounds: unknown[] = [];
+    onReviewRound((result) => rounds.push(result));
+    const resultPromise = waitForSubmit();
+
+    const res = await fetch(`http://localhost:${String(port)}/submit`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comments: [], verdict: "approve" }),
+    });
+    const body = await res.json() as { status?: string };
+    expect(body).toEqual({ status: "closing" });
+    expect(rounds).toEqual([{ comments: [], verdict: "approve" }]);
+    expect(await resultPromise).toEqual({ comments: [], verdict: "approve" });
+
+    await closeServer(server);
+  });
+});

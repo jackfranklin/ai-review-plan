@@ -33,6 +33,7 @@ export type SessionEndReason = "disconnected";
 export interface InteractiveServerHandle extends ServerHandle {
   broadcastUpdate: (payload: PlanUpdatePayload) => void;
   onSessionEnd: (cb: (reason: SessionEndReason) => void) => void;
+  onReviewRound: (cb: (result: ReviewResult) => void) => void;
 }
 
 let disconnectGraceMs = 30_000;
@@ -75,6 +76,7 @@ export function createServer(
   const interactive = !!opts?.interactive;
   const sseConnections = new Set<http.ServerResponse>();
   const sessionEndCallbacks: Array<(reason: SessionEndReason) => void> = [];
+  const reviewRoundCallbacks: Array<(result: ReviewResult) => void> = [];
   let disconnectGraceTimer: NodeJS.Timeout | null = null;
 
   let resolveSubmit!: (result: ReviewResult) => void;
@@ -89,6 +91,10 @@ export function createServer(
 
   function onSessionEnd(cb: (reason: SessionEndReason) => void): void {
     sessionEndCallbacks.push(cb);
+  }
+
+  function onReviewRound(cb: (result: ReviewResult) => void): void {
+    reviewRoundCallbacks.push(cb);
   }
 
   const server = http.createServer((req, res) => {
@@ -136,10 +142,23 @@ export function createServer(
       req.on("data", (chunk: Buffer) => { body += chunk.toString(); });
       req.on("end", () => {
         try {
-          const { comments, verdict } = JSON.parse(body) as { comments: Comment[]; verdict: Verdict };
-          res.writeHead(200, { "Content-Type": "application/json" });
-          res.end(JSON.stringify({ ok: true }));
-          resolveSubmit({ comments, verdict });
+          const result = JSON.parse(body) as ReviewResult;
+          if (!interactive) {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ ok: true }));
+            resolveSubmit(result);
+            return;
+          }
+
+          for (const cb of reviewRoundCallbacks) cb(result);
+          if (result.verdict === "approve") {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "closing" }));
+            resolveSubmit(result);
+          } else {
+            res.writeHead(200, { "Content-Type": "application/json" });
+            res.end(JSON.stringify({ status: "waiting_for_updates" }));
+          }
         } catch (err) {
           res.writeHead(400, { "Content-Type": "application/json" });
           res.end(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }));
@@ -154,5 +173,5 @@ export function createServer(
 
   const handle: ServerHandle = { server, waitForSubmit: () => submitPromise };
   if (!interactive) return handle;
-  return { ...handle, broadcastUpdate, onSessionEnd };
+  return { ...handle, broadcastUpdate, onSessionEnd, onReviewRound };
 }
