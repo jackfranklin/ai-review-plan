@@ -393,6 +393,9 @@ export class RpApp extends LitElement {
   @state() private _groupedBlocks: BlockGroup[] = [];
   @state() private _aiSummary = "";
   @state() private _aiAnnotationMap: Map<number, AiAnnotation[]> = new Map();
+  @state() private _interactive = false;
+  @state() private reviewStatus: "reviewing" | "waiting" = "reviewing";
+  @state() private previousRounds: Array<{ comments: Comment[]; aiSummary: string }> = [];
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -444,28 +447,7 @@ export class RpApp extends LitElement {
     localStorage.setItem("ai-review:wrap-lines", String(this.wrapLines));
   };
 
-  private async _fetchPlan(): Promise<void> {
-    let res: Response;
-    try {
-      res = await fetch("/plan");
-    } catch (err) {
-      this._loadError = err instanceof Error ? err.message : String(err);
-      return;
-    }
-    if (!res.ok) {
-      this._loadError = `Server returned ${String(res.status)}`;
-      return;
-    }
-    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean; aiSummary?: string; aiAnnotations?: AiAnnotation[] };
-    this.mode = data.mode ?? "plan";
-
-    if (data.wrap !== undefined) {
-      this.wrapLines = data.wrap;
-    } else {
-      const saved = localStorage.getItem("ai-review:wrap-lines");
-      this.wrapLines = saved !== null ? saved === "true" : true;
-    }
-    
+  private _applyPlanData(data: { markdown: string; aiSummary?: string; aiAnnotations?: AiAnnotation[] }): void {
     if (this.mode === "diff") {
       this.blocks = parseDiff(data.markdown);
       this.files = this.blocks
@@ -478,11 +460,6 @@ export class RpApp extends LitElement {
     }
 
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
-    if (data.title) {
-      this.planTitle = data.title;
-      document.title = `ai-review: ${data.title}`;
-    }
-    this._applyTheme(data.theme ?? "dark");
     if (data.aiSummary) {
       this._aiSummary = data.aiSummary;
     }
@@ -493,6 +470,37 @@ export class RpApp extends LitElement {
         this.mode === "diff" ? "diff" : "plan"
       );
     }
+  }
+
+  private async _fetchPlan(): Promise<void> {
+    let res: Response;
+    try {
+      res = await fetch("/plan");
+    } catch (err) {
+      this._loadError = err instanceof Error ? err.message : String(err);
+      return;
+    }
+    if (!res.ok) {
+      this._loadError = `Server returned ${String(res.status)}`;
+      return;
+    }
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean; aiSummary?: string; aiAnnotations?: AiAnnotation[]; interactive?: boolean };
+    this.mode = data.mode ?? "plan";
+    this._interactive = data.interactive ?? false;
+
+    if (data.wrap !== undefined) {
+      this.wrapLines = data.wrap;
+    } else {
+      const saved = localStorage.getItem("ai-review:wrap-lines");
+      this.wrapLines = saved !== null ? saved === "true" : true;
+    }
+
+    if (data.title) {
+      this.planTitle = data.title;
+      document.title = `ai-review: ${data.title}`;
+    }
+    this._applyTheme(data.theme ?? "dark");
+    this._applyPlanData(data);
     const saved = localStorage.getItem(this._storageKey);
     if (saved) {
       try {
