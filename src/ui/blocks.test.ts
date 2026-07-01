@@ -321,7 +321,9 @@ describe("mapAnnotationsToBlocks", () => {
       const map = mapAnnotationsToBlocks([annotation], blocks, "diff");
       const matchedBlock = blocks.find(b => b.fileName === "src/foo.ts" && b.oldLine === 39);
       expect(matchedBlock).toBeDefined();
-      expect(map.get(matchedBlock!.startLine)).toEqual([annotation]);
+      if (matchedBlock) {
+        expect(map.get(matchedBlock.startLine)).toEqual([annotation]);
+      }
     });
 
     it("maps a new-line annotation to the added block", () => {
@@ -330,7 +332,9 @@ describe("mapAnnotationsToBlocks", () => {
       const map = mapAnnotationsToBlocks([annotation], blocks, "diff");
       const matchedBlock = blocks.find(b => b.fileName === "src/foo.ts" && b.newLine === 39);
       expect(matchedBlock).toBeDefined();
-      expect(map.get(matchedBlock!.startLine)).toEqual([annotation]);
+      if (matchedBlock) {
+        expect(map.get(matchedBlock.startLine)).toEqual([annotation]);
+      }
     });
 
     it("ignores annotations for files not in the diff", () => {
