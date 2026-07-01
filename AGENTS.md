@@ -73,10 +73,13 @@ npm run lint
 ## Key architectural constraints
 
 **No cross-boundary imports between UI and CLI/server.**
-`src/ui/` has its own `rootDir` in tsconfig and cannot import from `src/server/`
-or `src/cli/`. The shared `Comment` interface is defined in `src/ui/types.ts`
-for UI code and re-exported from `src/server/server.ts` for CLI/server code.
-If you add shared types, follow this pattern — do not merge the tsconfig roots.
+`src/ui/` cannot import from `src/server/` or `src/cli/`, and vice versa.
+Types shared between both sides live in `src/types/` (e.g. `AiAnnotation`,
+`AiAnnotationsFile` in `src/types/annotation.ts`), which both `tsconfig.ui.json`
+and `tsconfig.cli.json` include. `src/ui/types.ts` and `src/server/server.ts`
+re-export from `src/types/` rather than redefining. If you add a new shared
+type, put it in `src/types/` and re-export it the same way — do not merge the
+tsconfig `rootDir`s or duplicate the definition.
 
 **ESM output only.**
 `package.json` has `"type": "module"`. The esbuild output is ESM (`format: "esm"`).

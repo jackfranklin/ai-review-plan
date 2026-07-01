@@ -4,7 +4,7 @@
     "module": "ESNext",
     "moduleResolution": "Bundler",
     "outDir": "dist/ui",
-    "rootDir": "src/ui",
+    "rootDir": "src",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
@@ -12,5 +12,5 @@
     "useDefineForClassFields": false,
     "experimentalDecorators": true
   },
-  "include": ["src/ui/**/*"]
+  "include": ["src/ui/**/*", "src/types/**/*"]
 }

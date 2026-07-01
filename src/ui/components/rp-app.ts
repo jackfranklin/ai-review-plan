@@ -1,8 +1,8 @@
 import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import { groupBlocks, parseDiff, groupFilesByDirectory, computeGroupedBlocks } from "../blocks.js";
+import { groupBlocks, parseDiff, groupFilesByDirectory, computeGroupedBlocks, mapAnnotationsToBlocks } from "../blocks.js";
 import type { Block, BlockGroup } from "../blocks.js";
-import type { Comment } from "../types.js";
+import type { Comment, AiAnnotation } from "../types.js";
 import "./rp-plan-line.js";
 
 @customElement("rp-app")
@@ -351,6 +351,24 @@ export class RpApp extends LitElement {
       cursor: pointer;
       margin: 0;
     }
+    .ai-summary {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--ai-annotation-border);
+      border-left: 4px solid var(--ai-annotation-border);
+      background: var(--ai-annotation-bg);
+      border-radius: 4px;
+      padding: 0.75rem 1rem;
+    }
+    .ai-summary-header {
+      font-size: 0.75em;
+      font-weight: 600;
+      color: var(--ai-annotation-label);
+      margin-bottom: 0.4rem;
+    }
+    .ai-summary-text {
+      color: var(--ai-annotation-text);
+      white-space: pre-wrap;
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -373,6 +391,8 @@ export class RpApp extends LitElement {
   @state() private _submitted = false;
   @state() private _groupedFiles: ReturnType<typeof groupFilesByDirectory> = [];
   @state() private _groupedBlocks: BlockGroup[] = [];
+  @state() private _aiSummary = "";
+  @state() private _aiAnnotationMap: Map<number, AiAnnotation[]> = new Map();
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -436,7 +456,7 @@ export class RpApp extends LitElement {
       this._loadError = `Server returned ${String(res.status)}`;
       return;
     }
-    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean };
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean; aiSummary?: string; aiAnnotations?: AiAnnotation[] };
     this.mode = data.mode ?? "plan";
 
     if (data.wrap !== undefined) {
@@ -463,6 +483,16 @@ export class RpApp extends LitElement {
       document.title = `ai-review: ${data.title}`;
     }
     this._applyTheme(data.theme ?? "dark");
+    if (data.aiSummary) {
+      this._aiSummary = data.aiSummary;
+    }
+    if (data.aiAnnotations?.length) {
+      this._aiAnnotationMap = mapAnnotationsToBlocks(
+        data.aiAnnotations,
+        this.blocks,
+        this.mode === "diff" ? "diff" : "plan"
+      );
+    }
     const saved = localStorage.getItem(this._storageKey);
     if (saved) {
       try {
@@ -654,6 +684,7 @@ export class RpApp extends LitElement {
     const blockComments = this.comments.filter(
       (c) => c.startLine === block.startLine
     );
+    const blockAiAnnotations = this._aiAnnotationMap.get(block.startLine) ?? [];
     const isOpen =
       this.openCommentLine !== null &&
       this.openCommentLine >= block.startLine &&
@@ -664,6 +695,7 @@ export class RpApp extends LitElement {
         class=${block.type === "file-header" ? "sticky-header" : ""}
         .block=${block}
         .comments=${blockComments}
+        .aiAnnotations=${blockAiAnnotations}
         ?focused=${this.focusedLine >= block.startLine &&
           this.focusedLine <= block.endLine}
         ?commentOpen=${isOpen}
@@ -727,6 +759,12 @@ export class RpApp extends LitElement {
           @comment-edit=${this._onCommentEdit}
           @comment-delete=${this._onCommentDelete}
         >
+          ${this._aiSummary ? html`
+            <div class="ai-summary" role="note">
+              <div class="ai-summary-header">AI Summary</div>
+              <div class="ai-summary-text">${this._aiSummary}</div>
+            </div>
+          ` : ""}
           ${this.mode === "diff" && this.files.length > 0 && this.sidebarCollapsed
             ? html`
                 <button class="toggle-sidebar-expand" @click=${this._toggleSidebar} title="Expand sidebar">📂 Files</button>

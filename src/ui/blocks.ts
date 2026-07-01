@@ -1,3 +1,5 @@
+import type { AiAnnotation } from "./types.js";
+
 // Fenced code block opener: ``` or ~~~ with any leading indentation
 const FENCE_RE = /^( *)(`{3,}|~{3,})/;
 // GFM table delimiter row (e.g. |---|---| or ---|---, indented up to 3 spaces)
@@ -272,6 +274,65 @@ export function groupFilesByDirectory(files: FileItem[]): FileGroup[] {
   });
 
   return groups;
+}
+
+/**
+ * Maps each annotation to the block it should appear beneath, keyed by block.startLine.
+ *
+ * Plan mode: finds the block whose [startLine, endLine] contains annotation.startLine.
+ * Falls back to the nearest block with startLine >= annotation.startLine to handle
+ * annotations that land in parser-stripped gaps (blank lines, etc.).
+ *
+ * Diff mode: each Block carries a single line number, so the containment check is
+ * inverted — we ask whether the block's line falls inside the annotation's [startLine,
+ * endLine] range. lineType selects which side (oldLine vs newLine) to match against.
+ *
+ * Annotations with no matching block are silently dropped.
+ */
+export function mapAnnotationsToBlocks(
+  annotations: AiAnnotation[],
+  blocks: Block[],
+  mode: "plan" | "diff"
+): Map<number, AiAnnotation[]> {
+  const result = new Map<number, AiAnnotation[]>();
+
+  for (const annotation of annotations) {
+    let targetBlock: Block | undefined;
+
+    if (mode === "plan") {
+      targetBlock =
+        blocks.find(
+          (b) =>
+            b.startLine <= annotation.startLine &&
+            annotation.startLine <= b.endLine
+        ) ?? blocks.find((b) => b.startLine >= annotation.startLine);
+    } else {
+      const useOld = annotation.lineType === "old";
+      targetBlock = blocks.find(
+        (b) =>
+          b.fileName === annotation.file &&
+          (useOld
+            ? b.oldLine !== undefined &&
+              b.oldLine >= annotation.startLine &&
+              b.oldLine <= annotation.endLine
+            : b.newLine !== undefined &&
+              b.newLine >= annotation.startLine &&
+              b.newLine <= annotation.endLine)
+      );
+    }
+
+    if (targetBlock) {
+      const key = targetBlock.startLine;
+      const list = result.get(key);
+      if (list !== undefined) {
+        list.push(annotation);
+      } else {
+        result.set(key, [annotation]);
+      }
+    }
+  }
+
+  return result;
 }
 
 export function computeGroupedBlocks(blocks: Block[]): BlockGroup[] {

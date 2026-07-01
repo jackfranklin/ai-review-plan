@@ -3,3 +3,5 @@ export interface Comment {
   endLine: number;
   text: string;
 }
+
+export type { AiAnnotation, AiAnnotationsFile } from "../types/annotation.js";

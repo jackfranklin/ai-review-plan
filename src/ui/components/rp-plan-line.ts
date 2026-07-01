@@ -3,11 +3,12 @@ import { unsafeHTML } from "lit/directives/unsafe-html.js";
 import { classMap } from "lit/directives/class-map.js";
 import { customElement, property } from "lit/decorators.js";
 import { marked } from "marked";
-import type { Comment } from "../types.js";
+import type { Comment, AiAnnotation } from "../types.js";
 import { parseLineIndent, type Block } from "../blocks.js";
 import "./rp-comment-box.js";
 import "./rp-comment-thread.js";
 import "./rp-mermaid.js";
+import "./rp-ai-annotation.js";
 
 @customElement("rp-plan-line")
 export class RpPlanLine extends LitElement {
@@ -129,6 +130,7 @@ export class RpPlanLine extends LitElement {
 
   @property({ attribute: false }) block!: Block;
   @property({ attribute: false }) comments: Comment[] = [];
+  @property({ attribute: false }) aiAnnotations: AiAnnotation[] = [];
   @property({ type: Boolean }) focused = false;
   @property({ type: Boolean }) commentOpen = false;
   @property({ type: Boolean }) isDiff = false;
@@ -223,6 +225,9 @@ export class RpPlanLine extends LitElement {
           ${contentHtml}
         </div>
       </div>
+      ${this.aiAnnotations.map(
+        (a) => html`<rp-ai-annotation .annotation=${a}></rp-ai-annotation>`
+      )}
       ${this.commentOpen
         ? html`<rp-comment-box
             .startLine=${this.block.startLine}

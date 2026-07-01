@@ -47,6 +47,12 @@ html, body {
   --comment-bg:     #1f1f1f;
   --comment-text:   #e0e0e0;
 
+  /* AI Annotations */
+  --ai-annotation-border: #6b5500;
+  --ai-annotation-bg:     #1f1900;
+  --ai-annotation-label:  #d4a017;
+  --ai-annotation-text:   #e8cc88;
+
   /* Code */
   --code-bg:      #1a1a1a;
   --code-border:  #333;
@@ -108,6 +114,12 @@ html, body {
   --comment-border: #0969da;
   --comment-bg:     #f0f6ff;
   --comment-text:   #1a1a1a;
+
+  /* AI Annotations */
+  --ai-annotation-border: #b45309;
+  --ai-annotation-bg:     #fffbeb;
+  --ai-annotation-label:  #92400e;
+  --ai-annotation-text:   #78350f;
 
   --code-bg:      #f6f8fa;
   --code-border:  #d0d0d0;

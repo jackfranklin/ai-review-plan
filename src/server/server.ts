@@ -1,5 +1,6 @@
 import http from "node:http";
 import fs from "node:fs";
+import type { AiAnnotationsFile } from "../types/annotation.js";
 
 export interface Comment {
   startLine: number;
@@ -14,13 +15,16 @@ export interface ReviewResult {
   verdict: Verdict;
 }
 
+export type { AiAnnotation, AiAnnotationsFile } from "../types/annotation.js";
+
 export function createServer(
   planPath: string,
   uiHtml: string,
   title = "",
   theme = "dark",
   mode = "plan",
-  wrap?: boolean
+  wrap?: boolean,
+  aiAnnotations?: AiAnnotationsFile
 ): { server: http.Server; waitForSubmit: () => Promise<ReviewResult> } {
   let resolveSubmit!: (result: ReviewResult) => void;
   const submitPromise = new Promise<ReviewResult>((resolve) => {
@@ -36,8 +40,11 @@ export function createServer(
 
     if (req.method === "GET" && req.url === "/plan") {
       const markdown = fs.readFileSync(planPath, "utf-8");
+      const payload: Record<string, unknown> = { markdown, title, theme, mode, wrap };
+      if (aiAnnotations?.summary) payload.aiSummary = aiAnnotations.summary;
+      if (aiAnnotations?.annotations?.length) payload.aiAnnotations = aiAnnotations.annotations;
       res.writeHead(200, { "Content-Type": "application/json" });
-      res.end(JSON.stringify({ markdown, title, theme, mode, wrap }));
+      res.end(JSON.stringify(payload));
       return;
     }
 
