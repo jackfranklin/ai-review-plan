@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createServer } from "../server/server.js";
-import type { AiAnnotationsFile } from "../server/server.js";
+import type { AiAnnotationsFile, ServerHandle, InteractiveServerHandle } from "../server/server.js";
 import { formatOutput } from "./format.js";
 import getPort from "get-port";
 import open from "open";
@@ -123,7 +123,10 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  const handle: ServerHandle | InteractiveServerHandle = interactive
+    ? createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData, { interactive: true })
+    : createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  const { server, waitForSubmit } = handle;
   server.listen(port);
 
   const url = `http://localhost:${String(port)}`;
@@ -133,6 +136,10 @@ async function run(): Promise<void> {
     await open(url);
   } catch {
     process.stderr.write(`Could not open browser automatically. Visit: ${url}\n`);
+  }
+
+  if (interactive) {
+    process.stdout.write(`Watching: ${planPath}\n`);
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");
