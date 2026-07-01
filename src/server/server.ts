@@ -1,5 +1,6 @@
 import http from "node:http";
 import fs from "node:fs";
+import type { AiAnnotationsFile } from "../types/annotation.js";
 
 export interface Comment {
   startLine: number;
@@ -14,20 +15,7 @@ export interface ReviewResult {
   verdict: Verdict;
 }
 
-// NOTE: AiAnnotation and AiAnnotationsFile are mirrored in src/ui/types.ts.
-// Keep them in sync — they can't share a source due to separate tsconfig rootDirs.
-export interface AiAnnotation {
-  file?: string;             // diff mode only: source file path (e.g. "src/foo.ts")
-  startLine: number;         // 1-indexed; source line for diff, plan-file line for plan
-  endLine: number;
-  lineType?: "new" | "old";  // diff mode only; which side the line numbers refer to (default: "new")
-  text: string;
-}
-
-export interface AiAnnotationsFile {
-  summary?: string;
-  annotations?: AiAnnotation[];
-}
+export type { AiAnnotation, AiAnnotationsFile } from "../types/annotation.js";
 
 export function createServer(
   planPath: string,
