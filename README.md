@@ -132,6 +132,37 @@ Press **?** in the UI to see all keyboard shortcuts.
 
 ---
 
+## Interactive mode
+
+By default `ai-review` is single-shot: it blocks until you submit once, then
+exits. Pass `--interactive` (or `-i`) to keep the loop open for multiple
+rounds — useful for an AI agent that revises the plan file in place based on
+your feedback and wants the browser to update without you re-running the CLI:
+
+```bash
+ai-review plan plan.md --interactive
+```
+
+`--interactive` requires a real file path, since the agent needs something on
+disk to revise — it cannot be combined with piping from stdin (`ai-review
+plan` with no file, or `ai-review diff`, which always reads from stdin).
+
+An integrating AI agent should watch stdout for these lines:
+
+- `Watching: <path>` — printed once at startup; the file the CLI is watching
+  for changes.
+- `=== FEEDBACK END ===` — printed after each round where you click
+  **Request Changes**. The CLI keeps running; revise the file at `<path>` and
+  the open browser tab updates automatically.
+- `=== SESSION CLOSED: client disconnected ===` — printed (and the CLI exits
+  non-zero) if the browser tab doesn't reconnect within 30 seconds of closing.
+  Re-running the CLI against the same file recovers the session.
+
+Clicking **Approve** ends the session the same way non-interactive mode does:
+the CLI prints the final output and exits 0.
+
+---
+
 ## Output format
 
 When you leave comments, the CLI prints:
