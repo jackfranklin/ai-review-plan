@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import type { AddressInfo } from "node:net";
-import { createServer, __setDisconnectGraceMsForTests } from "./server.js";
+import { createServer } from "./server.js";
 
 function tmpPlanFile(content = "# Plan\n"): string {
   const file = path.join(os.tmpdir(), `server-test-${String(Date.now())}-${String(Math.random())}.md`);
@@ -72,13 +72,11 @@ describe("createServer disconnect grace timer", () => {
 
   afterEach(() => {
     if (planFile) fs.rmSync(planFile, { force: true });
-    __setDisconnectGraceMsForTests(30_000);
   });
 
   it("fires onSessionEnd after the grace period once all clients disconnect", async () => {
-    __setDisconnectGraceMsForTests(30);
     planFile = tmpPlanFile();
-    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true, disconnectGraceMs: 30 });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const port = (server.address() as AddressInfo).port;
 
@@ -96,9 +94,8 @@ describe("createServer disconnect grace timer", () => {
   });
 
   it("cancels the grace timer if a client reconnects in time", async () => {
-    __setDisconnectGraceMsForTests(50);
     planFile = tmpPlanFile();
-    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true });
+    const { server, onSessionEnd } = createServer(planFile, "<html></html>", "", "dark", "plan", undefined, undefined, { interactive: true, disconnectGraceMs: 50 });
     await new Promise<void>((resolve) => server.listen(0, resolve));
     const port = (server.address() as AddressInfo).port;
 

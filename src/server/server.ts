@@ -21,6 +21,8 @@ export type { PlanUpdatePayload, SubmitStatus } from "../types/interactive.js";
 
 export interface CreateServerOptions {
   interactive?: boolean;
+  /** Delay before ending an interactive session after the last SSE client disconnects. */
+  disconnectGraceMs?: number;
 }
 
 export interface ServerHandle {
@@ -36,13 +38,6 @@ export interface InteractiveServerHandle extends ServerHandle {
   onReviewRound: (cb: (result: ReviewResult) => void) => void;
 }
 
-let disconnectGraceMs = 30_000;
-
-/** Test-only hook to avoid waiting out the real grace period in tests. */
-export function __setDisconnectGraceMsForTests(ms: number): void {
-  disconnectGraceMs = ms;
-}
-
 export function createServer(
   planPath: string,
   uiHtml: string,
@@ -51,7 +46,7 @@ export function createServer(
   mode: string | undefined,
   wrap: boolean | undefined,
   aiAnnotations: AiAnnotationsFile | undefined,
-  opts: { interactive: true }
+  opts: CreateServerOptions & { interactive: true }
 ): InteractiveServerHandle;
 export function createServer(
   planPath: string,
@@ -74,6 +69,7 @@ export function createServer(
   opts?: CreateServerOptions
 ): ServerHandle | InteractiveServerHandle {
   const interactive = !!opts?.interactive;
+  const disconnectGraceMs = opts?.disconnectGraceMs ?? 30_000;
   const sseConnections = new Set<http.ServerResponse>();
   const sessionEndCallbacks: Array<(reason: SessionEndReason) => void> = [];
   const reviewRoundCallbacks: Array<(result: ReviewResult) => void> = [];
@@ -126,6 +122,9 @@ export function createServer(
         clearTimeout(disconnectGraceTimer);
         disconnectGraceTimer = null;
       }
+      res.on("error", () => {
+        sseConnections.delete(res);
+      });
       req.on("close", () => {
         sseConnections.delete(res);
         if (interactive && sseConnections.size === 0) {

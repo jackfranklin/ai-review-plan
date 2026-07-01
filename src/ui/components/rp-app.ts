@@ -2,7 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { groupBlocks, parseDiff, groupFilesByDirectory, computeGroupedBlocks, mapAnnotationsToBlocks } from "../blocks.js";
 import type { Block, BlockGroup } from "../blocks.js";
-import type { Comment, AiAnnotation } from "../types.js";
+import type { Comment, AiAnnotation, PlanUpdatePayload, SubmitStatus } from "../types.js";
 import "./rp-plan-line.js";
 
 @customElement("rp-app")
@@ -482,7 +482,7 @@ export class RpApp extends LitElement {
   private _connectEvents(): void {
     this._eventSource = new EventSource("/events");
     this._eventSource.onmessage = (e: MessageEvent<string>) => {
-      const data = JSON.parse(e.data) as { markdown: string; aiSummary?: string; aiAnnotations?: AiAnnotation[] };
+      const data = JSON.parse(e.data) as PlanUpdatePayload;
       this._applyPlanData(data);
       this.reviewStatus = "reviewing";
     };
@@ -514,7 +514,7 @@ export class RpApp extends LitElement {
     localStorage.setItem("ai-review:wrap-lines", String(this.wrapLines));
   };
 
-  private _applyPlanData(data: { markdown: string; aiSummary?: string; aiAnnotations?: AiAnnotation[] }): void {
+  private _applyPlanData(data: PlanUpdatePayload): void {
     if (this.mode === "diff") {
       this.blocks = parseDiff(data.markdown);
       this.files = this.blocks
@@ -527,9 +527,8 @@ export class RpApp extends LitElement {
     }
 
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
-    if (data.aiSummary) {
-      this._aiSummary = data.aiSummary;
-    }
+    this._aiSummary = data.aiSummary ?? "";
+    this._aiAnnotationMap = new Map();
     if (data.aiAnnotations?.length) {
       this._aiAnnotationMap = mapAnnotationsToBlocks(
         data.aiAnnotations,
@@ -734,7 +733,7 @@ export class RpApp extends LitElement {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comments, verdict }),
       });
-      const body = await res.json().catch(() => ({})) as { status?: string; error?: string };
+      const body = await res.json().catch(() => ({})) as { status?: SubmitStatus; error?: string };
       if (!res.ok) {
         this._submitError = body.error ?? `Server returned ${String(res.status)}`;
         return;
