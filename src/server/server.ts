@@ -16,6 +16,7 @@ export interface ReviewResult {
 }
 
 export type { AiAnnotation, AiAnnotationsFile } from "../types/annotation.js";
+export type { PlanUpdatePayload, SubmitStatus } from "../types/interactive.js";
 
 export function createServer(
   planPath: string,
