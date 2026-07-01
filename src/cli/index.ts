@@ -172,6 +172,9 @@ async function run(): Promise<void> {
         process.exit(0);
       }
       process.stdout.write("=== FEEDBACK END ===\n");
+      process.stdout.write(
+        `\n[ACTION REQUIRED] User requested changes. Read the comments above, modify the plan file in-place at: ${planPath}, and save the file. The changes will be automatically detected and broadcast back to the user's browser. Do NOT wait for the process to exit or for a user chat prompt.\n`
+      );
     });
 
     interactiveHandle.onSessionEnd(() => {

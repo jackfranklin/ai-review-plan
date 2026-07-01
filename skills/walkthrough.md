@@ -109,11 +109,9 @@ do not wait for it to exit.
 
 Keep monitoring the background process's stdout. Each round ends one of three ways:
 
-- **`=== FEEDBACK END ===`** — the developer left questions and clicked **Request
+- **`=== FEEDBACK END ===`** / **`[ACTION REQUIRED]`** — the developer left questions and clicked **Request
   Changes**. Read the comments from the `## Review: CHANGES REQUESTED` output since
-  the last marker, and answer each one directly in the chat: answer the question,
-  correct any misunderstanding, or acknowledge where the code could be clearer. Do
-  not ask the developer to re-read the diff themselves. Then revise the walkthrough
+  the last marker. **You must act immediately and autonomously. Do not wait for a user chat prompt or command termination.** Answer each question directly in the chat, then revise the walkthrough
   document **in place at its original path** to incorporate the answers inline (so
   future readers don't need the Q&A thread) — this is picked up automatically and
   pushed to the open browser tab, no restart needed. Go back to waiting on stdout.
@@ -124,6 +122,9 @@ Keep monitoring the background process's stdout. Each round ends one of three wa
   browser tab didn't reconnect within 30 seconds. Tell the developer the session
   closed and ask whether to re-open it (re-run from step 3 against the same file)
   or stop here.
+
+  > [!IMPORTANT]
+  > When the developer clicks **Request Changes**, the CLI does **not** exit. It prints `=== FEEDBACK END ===` and a `[ACTION REQUIRED]` block, then continues running. You must **not** wait for a user chat prompt or command termination. You must immediately read the printed feedback, perform the required document/file updates, save the file, and resume monitoring stdout.
 
 ### 6. Clean up
 

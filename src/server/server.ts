@@ -144,19 +144,23 @@ export function createServer(
           const result = JSON.parse(body) as ReviewResult;
           if (!interactive) {
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ ok: true }));
-            resolveSubmit(result);
+            res.end(JSON.stringify({ ok: true }), () => {
+              resolveSubmit(result);
+            });
             return;
           }
 
-          for (const cb of reviewRoundCallbacks) cb(result);
           if (result.verdict === "approve") {
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ status: "closing" }));
-            resolveSubmit(result);
+            res.end(JSON.stringify({ status: "closing" }), () => {
+              for (const cb of reviewRoundCallbacks) cb(result);
+              resolveSubmit(result);
+            });
           } else {
             res.writeHead(200, { "Content-Type": "application/json" });
-            res.end(JSON.stringify({ status: "waiting_for_updates" }));
+            res.end(JSON.stringify({ status: "waiting_for_updates" }), () => {
+              for (const cb of reviewRoundCallbacks) cb(result);
+            });
           }
         } catch (err) {
           res.writeHead(400, { "Content-Type": "application/json" });
