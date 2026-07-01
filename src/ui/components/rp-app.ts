@@ -673,21 +673,36 @@ export class RpApp extends LitElement {
     const comments = this.submitSummary.trim()
       ? [...this.comments, { startLine: 0, endLine: 0, text: this.submitSummary.trim() }]
       : this.comments;
+    let status: string | undefined;
     try {
       const res = await fetch("/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comments, verdict }),
       });
+      const body = await res.json().catch(() => ({})) as { status?: string; error?: string };
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string };
         this._submitError = body.error ?? `Server returned ${String(res.status)}`;
         return;
       }
+      status = body.status;
     } catch (err) {
       this._submitError = err instanceof Error ? err.message : String(err);
       return;
     }
+
+    this.showSubmitModal = false;
+    this.pendingVerdict = null;
+    this.submitSummary = "";
+    this._submitError = "";
+
+    if (status === "waiting_for_updates") {
+      this.previousRounds = [...this.previousRounds, { comments, aiSummary: this._aiSummary }];
+      this.comments = [];
+      this.reviewStatus = "waiting";
+      return;
+    }
+
     localStorage.removeItem(this._storageKey);
     this._submitted = true;
   };
