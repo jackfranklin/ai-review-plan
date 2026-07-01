@@ -67,3 +67,4 @@ You are presenting a git diff for human review using the ai-review CLI.
 - Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
 - Pass `--no-wrap` to disable line wrapping if you prefer lines to overflow with a scrollbar. Line wrapping is enabled by default.
 - If the diff is very large (hundreds of files), warn the user before opening and offer to scope it to specific paths: `git diff HEAD -- src/`.
+- `--interactive` is not available here: it requires a real file path to watch for revisions, and this skill always pipes the diff over stdin. For a multi-round revision loop, use `/review-plan` or `/walkthrough` instead.

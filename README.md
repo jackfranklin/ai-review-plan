@@ -36,9 +36,14 @@ agent writes plan → ai-review opens browser → you annotate → agent revises
 ```
 
 The CLI starts a local server, opens the browser, and blocks until you click
-**Done**. Any comments you left are printed to stdout and returned to the agent
-as context for revision. If you click Done with no comments, nothing is printed
-and the agent proceeds as planned.
+**Approve** or **Request Changes**. Any comments you left are printed to stdout
+and returned to the agent as context for revision. If you click Approve with no
+comments, nothing is printed and the agent proceeds as planned.
+
+By default this is a single round: the CLI exits once you submit. Pass
+`--interactive` to keep it running instead, so an agent can revise the file in
+place and push updates to your open tab without you re-running anything — see
+[Interactive mode](#interactive-mode) below.
 
 ---
 
@@ -55,8 +60,10 @@ with your agent of choice to invoke them from your AI chat.
 
 ### review-plan
 
-Tells the agent to pause before executing any multi-step plan, open the review UI,
-and revise based on your comments before acting.
+Tells the agent to pause before executing any multi-step plan, open the review UI
+in **interactive mode**, and revise the plan file in place based on your comments —
+looping through as many rounds as you need without restarting anything, until you
+approve.
 
 ```
 /review-plan
@@ -67,7 +74,9 @@ Or ask your agent: **"use /review-plan before you start"**.
 ### review-diff
 
 Tells the agent to pipe the current diff into the review UI so you can annotate
-changes before they are committed or pushed.
+changes before they are committed or pushed. This is a single round: interactive
+mode isn't available here since diffs are piped over stdin rather than read from
+a file the agent can revise (see [Interactive mode](#interactive-mode)).
 
 ```
 /review-diff
@@ -79,8 +88,9 @@ Or ask your agent: **"use /review-diff to review changes"**.
 
 Rather than reviewing code, this skill is for *understanding* it. The agent
 analyses the diff, structures the changes into logical steps with explanations
-of the *why*, and opens the result in the review UI. You read at your own pace,
-leave questions as inline comments, and the agent answers them when you click Done.
+of the *why*, and opens the result in the review UI in **interactive mode**. You
+read at your own pace, leave questions as inline comments, and the agent answers
+them in chat and revises the document in place — looping until you approve.
 
 ```
 /walkthrough
@@ -92,7 +102,8 @@ The flow:
 
 ```
 agent writes code → /walkthrough → agent generates explanation →
-browser opens → you read + leave questions → agent answers in chat
+browser opens → you read + leave questions → agent answers in chat +
+revises the doc in place → (repeat until you approve)
 ```
 
 ---
@@ -125,8 +136,8 @@ ai-review plan --diff-only plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.
-Annotate the plan, then click **Done** (or press `Ctrl+D`). The CLI prints the
-annotated result to stdout and exits.
+Annotate the plan, then click **Approve** or **Request Changes** (`a` / `r`).
+The CLI prints the annotated result to stdout and exits.
 
 Press **?** in the UI to see all keyboard shortcuts.
 
@@ -210,7 +221,7 @@ src/
     index.ts          # Entry point: arg parsing, server start, browser launch, stdout
     ui-html.ts        # Stub (dev) / inlined UI HTML (overwritten by build script)
   server/
-    server.ts         # node:http server: GET /, GET /plan, POST /submit
+    server.ts         # node:http server: GET /, GET /plan, GET /events, POST /submit
   ui/
     index.html        # Vite entry point
     main.ts           # Bootstraps the Lit app

@@ -6,18 +6,20 @@ description: >
   The user will annotate it in the browser; you then revise based on their comments.
 ---
 
-You are presenting a plan for human review using the ai-review CLI.
+You are presenting a plan for human review using the ai-review CLI, in
+**interactive mode**: the CLI stays running across multiple rounds, and you
+revise the plan file in place instead of restarting the CLI for each pass.
 
 ## Steps
 
 1. Write the plan to a file in the `.jai/tmp/` directory in the current workspace (e.g. `.jai/tmp/plan-<timestamp>.md`). Ensure the directory exists or create it.
 
-2. **Generate AI annotations.** Before opening the review, write a JSON file with a summary and any per-line notes to guide the reviewer. This is especially useful on iterative reviews to show what changed since last time.
+2. **Generate AI annotations.** Before opening the review, write a JSON file with a summary and any per-line notes to guide the reviewer. This is especially useful on later rounds to show what changed since the last one.
 
    Write the file to `.jai/tmp/annotations-<timestamp>.json` using this schema:
    ```json
    {
-     "summary": "One or two sentences: what this plan does, or what changed since the last review.",
+     "summary": "One or two sentences: what this plan does, or what changed since the last round.",
      "annotations": [
        {
          "startLine": 15,
@@ -29,41 +31,41 @@ You are presenting a plan for human review using the ai-review CLI.
    ```
 
    Rules for generating annotations:
-   - `summary` is optional but strongly recommended; always write one on a re-review.
+   - `summary` is optional but strongly recommended; always write one after the first round.
    - `annotations` is optional; include only lines worth drawing the reviewer's attention to.
    - Do **not** include a `file` field — plan mode uses plain line numbers only.
    - `startLine` and `endLine` are **1-indexed line numbers in the plan file**. To get accurate numbers: read the written plan file back with line numbers (e.g. `cat -n .jai/tmp/plan-<timestamp>.md`), then reference the specific lines.
    - Fenced code blocks and tables are treated as a single block. Annotating any line inside a code fence attaches the annotation to the opening ` ``` ` line. If you want to annotate content within a fence, use the line number of the opening fence.
    - Read the written annotations file back and verify line numbers look correct before proceeding. If annotations don't appear in the review UI, they were silently dropped with no error — check that line numbers fall within the rendered content.
-   - On a re-review: annotate each section that changed and explain which prior feedback it addresses.
 
-3. Run the CLI with a title and theme. Choose a title that is short (3–6 words)
-   and specific to the current task — the user may have multiple review tabs open
-   at once and needs to tell them apart at a glance:
+3. Start the CLI **in the background** with `--interactive`, so you can keep working while it stays open across rounds. Choose a title that is short (3–6 words) and specific to the current task — the user may have multiple review tabs open at once and needs to tell them apart at a glance:
    ```
    node ~/git/ai-review-plan/dist/cli.js plan \
      --title "<short task-specific title>" \
      --theme <dark|light> \
      --ai-annotations-file .jai/tmp/annotations-<timestamp>.json \
+     --interactive \
      .jai/tmp/plan-<timestamp>.md
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
 
-4. Wait for the CLI to exit. It blocks until the user submits their review.
+4. Wait for stdout to print `Watching: <path>` — this confirms the server is up and the browser has been asked to open. The process keeps running after this; do not wait for it to exit.
 
-5. Check the exit code and stdout:
-   - **Exit 0 (Approved):** The user approved the plan. Check for any inline comments and address them, then proceed.
-   - **Exit 1 (Changes Requested):** The user requested changes. Do not proceed. Show the user the comments from stdout and revise the plan to address them, then offer to run another review pass.
+5. Keep monitoring the background process's stdout. Each round ends in one of three ways:
+   - **`=== FEEDBACK END ===`** — the user clicked **Request Changes**. The stdout since the last marker (or since `Watching:`) contains the same `## Review: CHANGES REQUESTED` output described below. Read the comments, revise the plan file **in place at its original path** (do not write a new file — the CLI is watching that exact path), and optionally rewrite the annotations file with an updated summary describing what you just changed. Both are picked up automatically and pushed to the open browser tab — you do not restart the CLI or re-run step 3. Then go back to waiting on stdout.
+   - **The process exits with code 0** — the user clicked **Approve**. Stdout will contain `## Review: APPROVED` and any final comments; check for inline comments and address them, then proceed. This ends the review — go to step 6.
+   - **`=== SESSION CLOSED: client disconnected ===`** (process exits non-zero) — the browser tab didn't reconnect within 30 seconds (e.g. the user closed it without submitting). Tell the user the session closed and ask whether to re-open it (re-run from step 3 against the same plan file) or stop here.
 
-6. The stdout always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully.
+6. The stdout for each round always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully before revising.
 
-7. Delete both temporary files (plan and annotations).
+7. Once the session has ended (approved, or the user confirms they're done), delete both temporary files (plan and annotations).
 
 ## Notes
 
 - Always pass `--title`. Derive it from the current conversation (e.g. "Auth middleware refactor", "Add dark mode", "DB migration plan") — never use a generic title like "Plan review".
 - Always pass `--theme`. Default to `light`; switch to `dark` if the user has indicated a preference.
 - Pass `--no-wrap` to disable line wrapping if you prefer lines to overflow with a scrollbar. Line wrapping is enabled by default.
-- Do not proceed with execution until after review is complete and the verdict is Approved.
+- Do not proceed with execution until the session ends with an Approved verdict.
 - If the user's comments conflict with each other, surface the conflict and ask for clarification rather than guessing.
 - **Diagrams**: Use Mermaid diagrams (e.g. `sequenceDiagram`, `flowchart TD`, `stateDiagram-v2` in a fenced code block with language `mermaid`) when explaining complex interactions, database schemas, architectures, or step-by-step processes to make the plan easier to review.
+</content>
