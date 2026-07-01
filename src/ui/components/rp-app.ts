@@ -369,6 +369,60 @@ export class RpApp extends LitElement {
       color: var(--ai-annotation-text);
       white-space: pre-wrap;
     }
+    .waiting-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.55);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 90;
+    }
+    .waiting-overlay-content {
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 1.5rem 2rem;
+      color: var(--text);
+      text-align: center;
+    }
+    .waiting-spinner {
+      margin: 0 auto 1rem;
+      width: 28px;
+      height: 28px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: waiting-spin 0.8s linear infinite;
+    }
+    @keyframes waiting-spin {
+      to { transform: rotate(360deg); }
+    }
+    .previous-rounds {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .previous-rounds summary {
+      cursor: pointer;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .previous-round {
+      padding: 0.5rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .previous-round-summary {
+      color: var(--ai-annotation-text);
+      white-space: pre-wrap;
+      margin-bottom: 0.5rem;
+    }
+    .previous-round ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--text-muted);
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -795,6 +849,25 @@ export class RpApp extends LitElement {
           @comment-edit=${this._onCommentEdit}
           @comment-delete=${this._onCommentDelete}
         >
+          ${this.previousRounds.length > 0 ? html`
+            <details class="previous-rounds">
+              <summary>Previous round${this.previousRounds.length === 1 ? "" : "s"} (${String(this.previousRounds.length)})</summary>
+              ${this.previousRounds.map((round, i) => html`
+                <div class="previous-round">
+                  <div class="previous-round-summary">Round ${String(i + 1)}${round.aiSummary ? html`: ${round.aiSummary}` : ""}</div>
+                  ${round.comments.length === 0
+                    ? html`<p>No comments.</p>`
+                    : html`
+                        <ul>
+                          ${round.comments.map((c) => html`
+                            <li>${c.startLine === 0 ? "General" : `Line ${String(c.startLine)}`}: ${c.text}</li>
+                          `)}
+                        </ul>
+                      `}
+                </div>
+              `)}
+            </details>
+          ` : ""}
           ${this._aiSummary ? html`
             <div class="ai-summary" role="note">
               <div class="ai-summary-header">AI Summary</div>
@@ -851,11 +924,23 @@ export class RpApp extends LitElement {
           Wrap lines
         </label>
         <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
-        <button class="approve" @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
-        <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Request Changes</button>
+        <button class="approve" ?disabled=${this.reviewStatus === "waiting"} @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
+        <button class="reject" ?disabled=${this.reviewStatus === "waiting"} @click=${() => { this._openSubmitModal("reject");  }}>Request Changes</button>
       </div>
       ${this.showSubmitModal && this.pendingVerdict ? this._renderSubmitModal() : ""}
       ${this.showHelp ? this._renderHelp() : ""}
+      ${this.reviewStatus === "waiting" ? this._renderWaitingOverlay() : ""}
+    `;
+  }
+
+  private _renderWaitingOverlay() {
+    return html`
+      <div class="waiting-overlay">
+        <div class="waiting-overlay-content">
+          <div class="waiting-spinner"></div>
+          <p>AI is revising the plan…</p>
+        </div>
+      </div>
     `;
   }
 
