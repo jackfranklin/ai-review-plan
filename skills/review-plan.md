@@ -49,19 +49,19 @@ revise the plan file in place instead of restarting the CLI for each pass.
    ```
    Use `--theme light` unless the user has expressed a preference for dark mode.
 
-52: 4. Wait for stdout to print `Watching: <path>` — this confirms the server is up and the browser has been asked to open. The process keeps running after this; do not wait for it to exit.
-53: 
-54: 5. Keep monitoring the background process's stdout. Each round ends in one of three ways:
-55:    - **`=== FEEDBACK END ===`** / **`[ACTION REQUIRED]`** — the user clicked **Request Changes**. The stdout since the last marker contains the `## Review: CHANGES REQUESTED` comments. **You must act immediately and autonomously. Do not wait for a user chat prompt or command termination.** Read the comments carefully, revise the plan file **in place at its original path** (do not write a new file — the CLI is watching that exact path), and optionally rewrite the annotations file with an updated summary describing what you just changed. Once you save the file, the changes are automatically sent to the browser. Then go back to waiting on stdout.
-56:    - **The process exits with code 0** — the user clicked **Approve**. Stdout will contain `## Review: APPROVED` and any final comments; check for inline comments and address them, then proceed. This ends the review — go to step 6.
-57:    - **`=== SESSION CLOSED: client disconnected ===`** (process exits non-zero) — the browser tab didn't reconnect within 30 seconds (e.g. the user closed it without submitting). Tell the user the session closed and ask whether to re-open it (re-run from step 3 against the same plan file) or stop here.
-58: 
-59:    > [!IMPORTANT]
-60:    > When the user clicks **Request Changes**, the CLI does **not** exit. It prints `=== FEEDBACK END ===` and a `[ACTION REQUIRED]` block, then continues running. You must **not** wait for a user chat prompt or command termination. You must immediately read the printed feedback, perform the required code/plan changes, save the file, and resume monitoring stdout.
-61: 
-62: 6. The stdout for each round always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully before revising.
-63: 
-64: 7. Once the session has ended (approved, or the user confirms they're done), delete both temporary files (plan and annotations).
+4. Wait for stdout to print `Watching: <path>` — this confirms the server is up and the browser has been asked to open. The process keeps running after this; do not wait for it to exit.
+
+5. Keep monitoring the background process's stdout. Each round ends in one of three ways:
+   - **`=== FEEDBACK END ===`** / **`[ACTION REQUIRED]`** — the user clicked **Request Changes**. The stdout since the last marker contains the `## Review: CHANGES REQUESTED` comments. **You must act immediately and autonomously. Do not wait for a user chat prompt or command termination.** Read the comments carefully, revise the plan file **in place at its original path** (do not write a new file — the CLI is watching that exact path), and optionally rewrite the annotations file with an updated summary describing what you just changed. Once you save the file, the changes are automatically sent to the browser. Then go back to waiting on stdout.
+   - **The process exits with code 0** — the user clicked **Approve**. Stdout will contain `## Review: APPROVED` and any final comments; check for inline comments and address them, then proceed. This ends the review — go to step 6.
+   - **`=== SESSION CLOSED: client disconnected ===`** (process exits non-zero) — the browser tab didn't reconnect within 30 seconds (e.g. the user closed it without submitting). Tell the user the session closed and ask whether to re-open it (re-run from step 3 against the same plan file) or stop here.
+
+   > [!IMPORTANT]
+   > When the user clicks **Request Changes**, the CLI does **not** exit. It prints `=== FEEDBACK END ===` and a `[ACTION REQUIRED]` block, then continues running. You must **not** wait for a user chat prompt or command termination. You must immediately read the printed feedback, perform the required code/plan changes, save the file, and resume monitoring stdout.
+
+6. The stdout for each round always begins with `## Review: APPROVED` or `## Review: CHANGES REQUESTED`, followed by any comments as a numbered list. Read each comment carefully before revising.
+
+7. Once the session has ended (approved, or the user confirms they're done), delete both temporary files (plan and annotations).
 
 ## Notes
 
