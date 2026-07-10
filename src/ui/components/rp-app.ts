@@ -386,28 +386,41 @@ export class RpApp extends LitElement {
     .waiting-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
-      display: flex;
-      align-items: center;
-      justify-content: center;
+      background: transparent;
       z-index: 90;
+      pointer-events: none;
     }
     .waiting-overlay-content {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
       background: var(--bg-raised);
       border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 1.5rem 2rem;
+      border-radius: 8px;
+      padding: 0.75rem 1.2rem;
       color: var(--text);
-      text-align: center;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
     }
     .waiting-spinner {
-      margin: 0 auto 1rem;
-      width: 28px;
-      height: 28px;
-      border: 3px solid var(--border);
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
       animation: waiting-spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    .waiting-state {
+      pointer-events: none;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
     }
     @keyframes waiting-spin {
       to { transform: rotate(360deg); }
@@ -590,6 +603,8 @@ export class RpApp extends LitElement {
   }
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
+    if (this.reviewStatus === "waiting") return;
+
     const inInput = e.composedPath().some(el => {
       if (!(el instanceof HTMLElement)) return false;
       const tag = el.tagName.toLowerCase();
@@ -825,7 +840,7 @@ export class RpApp extends LitElement {
       <div class="layout-container">
         ${this.mode === "diff" && this.files.length > 0 && !this.sidebarCollapsed
           ? html`
-              <div class="file-nav">
+              <div class="file-nav ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}">
                 <div class="file-nav-header">
                   <h3>Files</h3>
                   <button class="toggle-sidebar" @click=${this._toggleSidebar} title="Collapse sidebar">◂</button>
@@ -854,7 +869,7 @@ export class RpApp extends LitElement {
             `
           : ""}
         <div
-          class="review-content"
+          class="review-content ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}"
           @request-comment=${this._onRequestComment}
           @line-focus=${this._onLineFocus}
           @comment-save=${this._onCommentSave}
@@ -914,7 +929,7 @@ export class RpApp extends LitElement {
             : this.blocks.map((block) => this._renderBlock(block))}
         </div>
       </div>
-      <div class="toolbar">
+      <div class="toolbar ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}">
         ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
         <span class="mode-badge ${this._interactive ? "interactive" : ""}"
           title=${this._interactive
@@ -957,7 +972,7 @@ export class RpApp extends LitElement {
       <div class="waiting-overlay">
         <div class="waiting-overlay-content">
           <div class="waiting-spinner"></div>
-          <p>AI is revising the plan…</p>
+          <span>AI is revising the plan…</span>
         </div>
       </div>
     `;
