@@ -36,9 +36,14 @@ agent writes plan → ai-review opens browser → you annotate → agent revises
 ```
 
 The CLI starts a local server, opens the browser, and blocks until you click
-**Done**. Any comments you left are printed to stdout and returned to the agent
-as context for revision. If you click Done with no comments, nothing is printed
-and the agent proceeds as planned.
+**Approve** or **Request Changes**. Any comments you left are printed to stdout
+and returned to the agent as context for revision. If you click Approve with no
+comments, nothing is printed and the agent proceeds as planned.
+
+By default this is a single round: the CLI exits once you submit. Pass
+`--interactive` to keep it running instead, so an agent can revise the file in
+place and push updates to your open tab without you re-running anything — see
+[Interactive mode](#interactive-mode) below.
 
 ---
 
@@ -55,8 +60,10 @@ with your agent of choice to invoke them from your AI chat.
 
 ### review-plan
 
-Tells the agent to pause before executing any multi-step plan, open the review UI,
-and revise based on your comments before acting.
+Tells the agent to pause before executing any multi-step plan, open the review UI
+in **interactive mode**, and revise the plan file in place based on your comments —
+looping through as many rounds as you need without restarting anything, until you
+approve.
 
 ```
 /review-plan
@@ -67,7 +74,9 @@ Or ask your agent: **"use /review-plan before you start"**.
 ### review-diff
 
 Tells the agent to pipe the current diff into the review UI so you can annotate
-changes before they are committed or pushed.
+changes before they are committed or pushed. This is a single round: interactive
+mode isn't available here since diffs are piped over stdin rather than read from
+a file the agent can revise (see [Interactive mode](#interactive-mode)).
 
 ```
 /review-diff
@@ -79,8 +88,9 @@ Or ask your agent: **"use /review-diff to review changes"**.
 
 Rather than reviewing code, this skill is for *understanding* it. The agent
 analyses the diff, structures the changes into logical steps with explanations
-of the *why*, and opens the result in the review UI. You read at your own pace,
-leave questions as inline comments, and the agent answers them when you click Done.
+of the *why*, and opens the result in the review UI in **interactive mode**. You
+read at your own pace, leave questions as inline comments, and the agent answers
+them in chat and revises the document in place — looping until you approve.
 
 ```
 /walkthrough
@@ -92,7 +102,8 @@ The flow:
 
 ```
 agent writes code → /walkthrough → agent generates explanation →
-browser opens → you read + leave questions → agent answers in chat
+browser opens → you read + leave questions → agent answers in chat +
+revises the doc in place → (repeat until you approve)
 ```
 
 ---
@@ -125,10 +136,41 @@ ai-review plan --diff-only plan.md
 ```
 
 The browser opens automatically. If it doesn't, the URL is printed to stderr.
-Annotate the plan, then click **Done** (or press `Ctrl+D`). The CLI prints the
-annotated result to stdout and exits.
+Annotate the plan, then click **Approve** or **Request Changes** (`a` / `r`).
+The CLI prints the annotated result to stdout and exits.
 
 Press **?** in the UI to see all keyboard shortcuts.
+
+---
+
+## Interactive mode
+
+By default `ai-review` is single-shot: it blocks until you submit once, then
+exits. Pass `--interactive` (or `-i`) to keep the loop open for multiple
+rounds — useful for an AI agent that revises the plan file in place based on
+your feedback and wants the browser to update without you re-running the CLI:
+
+```bash
+ai-review plan plan.md --interactive
+```
+
+`--interactive` requires a real file path, since the agent needs something on
+disk to revise — it cannot be combined with piping from stdin (`ai-review
+plan` with no file, or `ai-review diff`, which always reads from stdin).
+
+An integrating AI agent should watch stdout for these lines:
+
+- `Watching: <path>` — printed once at startup; the file the CLI is watching
+  for changes.
+- `=== FEEDBACK END ===` — printed after each round where you click
+  **Request Changes**. The CLI keeps running; revise the file at `<path>` and
+  the open browser tab updates automatically.
+- `=== SESSION CLOSED: client disconnected ===` — printed (and the CLI exits
+  non-zero) if the browser tab doesn't reconnect within 30 seconds of closing.
+  Re-running the CLI against the same file recovers the session.
+
+Clicking **Approve** ends the session the same way non-interactive mode does:
+the CLI prints the final output and exits 0.
 
 ---
 
@@ -179,7 +221,7 @@ src/
     index.ts          # Entry point: arg parsing, server start, browser launch, stdout
     ui-html.ts        # Stub (dev) / inlined UI HTML (overwritten by build script)
   server/
-    server.ts         # node:http server: GET /, GET /plan, POST /submit
+    server.ts         # node:http server: GET /, GET /plan, GET /events, POST /submit
   ui/
     index.html        # Vite entry point
     main.ts           # Bootstraps the Lit app

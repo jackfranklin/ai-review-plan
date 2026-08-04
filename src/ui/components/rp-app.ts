@@ -2,7 +2,7 @@ import { LitElement, html, css } from "lit";
 import { customElement, state } from "lit/decorators.js";
 import { groupBlocks, parseDiff, groupFilesByDirectory, computeGroupedBlocks, mapAnnotationsToBlocks } from "../blocks.js";
 import type { Block, BlockGroup } from "../blocks.js";
-import type { Comment, AiAnnotation } from "../types.js";
+import type { Comment, AiAnnotation, PlanUpdatePayload, SubmitStatus } from "../types.js";
 import "./rp-plan-line.js";
 
 @customElement("rp-app")
@@ -46,6 +46,20 @@ export class RpApp extends LitElement {
       content: "·";
       margin: 0 0.5rem;
       color: var(--text-subtle);
+    }
+    .mode-badge {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      padding: 0.15rem 0.5rem;
+      border-radius: 3px;
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+    .mode-badge.interactive {
+      color: var(--accent);
+      border-color: var(--accent);
     }
     .status {
       color: var(--text-muted);
@@ -369,6 +383,73 @@ export class RpApp extends LitElement {
       color: var(--ai-annotation-text);
       white-space: pre-wrap;
     }
+    .waiting-overlay {
+      position: fixed;
+      inset: 0;
+      background: transparent;
+      z-index: 90;
+      pointer-events: none;
+    }
+    .waiting-overlay-content {
+      position: fixed;
+      top: 1.5rem;
+      right: 1.5rem;
+      background: var(--bg-raised);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 0.75rem 1.2rem;
+      color: var(--text);
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      pointer-events: auto;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    .waiting-spinner {
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: waiting-spin 0.8s linear infinite;
+      flex-shrink: 0;
+    }
+    .waiting-state {
+      pointer-events: none;
+      opacity: 0.6;
+      transition: opacity 0.2s ease;
+    }
+    @keyframes waiting-spin {
+      to { transform: rotate(360deg); }
+    }
+    .previous-rounds {
+      margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
+      border-radius: 4px;
+    }
+    .previous-rounds summary {
+      cursor: pointer;
+      padding: 0.5rem 0.75rem;
+      color: var(--text-muted);
+      font-weight: 600;
+    }
+    .previous-round {
+      padding: 0.5rem 1rem 1rem;
+      border-top: 1px solid var(--border);
+    }
+    .previous-round-summary {
+      color: var(--ai-annotation-text);
+      white-space: pre-wrap;
+      margin-bottom: 0.5rem;
+    }
+    .previous-round ul {
+      margin: 0;
+      padding-left: 1.2rem;
+      color: var(--text-muted);
+    }
   `;
 
   @state() private blocks: Block[] = [];
@@ -393,6 +474,10 @@ export class RpApp extends LitElement {
   @state() private _groupedBlocks: BlockGroup[] = [];
   @state() private _aiSummary = "";
   @state() private _aiAnnotationMap: Map<number, AiAnnotation[]> = new Map();
+  @state() private _interactive = false;
+  @state() private reviewStatus: "reviewing" | "waiting" = "reviewing";
+  @state() private previousRounds: Array<{ comments: Comment[]; aiSummary: string }> = [];
+  private _eventSource: EventSource | null = null;
 
   private get _storageKey(): string {
     return `ai-review:comments:${window.location.port}`;
@@ -405,7 +490,9 @@ export class RpApp extends LitElement {
 
   override connectedCallback(): void {
     super.connectedCallback();
-    void this._fetchPlan();
+    void this._fetchPlan().then(() => {
+      if (this._interactive) this._connectEvents();
+    });
     window.addEventListener("keydown", this._onKeydown);
     window.addEventListener("beforeunload", this._onBeforeUnload);
     const collapsed = localStorage.getItem("ai-review:sidebar-collapsed");
@@ -416,6 +503,16 @@ export class RpApp extends LitElement {
     super.disconnectedCallback();
     window.removeEventListener("keydown", this._onKeydown);
     window.removeEventListener("beforeunload", this._onBeforeUnload);
+    this._eventSource?.close();
+  }
+
+  private _connectEvents(): void {
+    this._eventSource = new EventSource("/events");
+    this._eventSource.onmessage = (e: MessageEvent<string>) => {
+      const data = JSON.parse(e.data) as PlanUpdatePayload;
+      this._applyPlanData(data);
+      this.reviewStatus = "reviewing";
+    };
   }
 
   override updated(changed: Map<PropertyKey, unknown>): void {
@@ -444,28 +541,7 @@ export class RpApp extends LitElement {
     localStorage.setItem("ai-review:wrap-lines", String(this.wrapLines));
   };
 
-  private async _fetchPlan(): Promise<void> {
-    let res: Response;
-    try {
-      res = await fetch("/plan");
-    } catch (err) {
-      this._loadError = err instanceof Error ? err.message : String(err);
-      return;
-    }
-    if (!res.ok) {
-      this._loadError = `Server returned ${String(res.status)}`;
-      return;
-    }
-    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean; aiSummary?: string; aiAnnotations?: AiAnnotation[] };
-    this.mode = data.mode ?? "plan";
-
-    if (data.wrap !== undefined) {
-      this.wrapLines = data.wrap;
-    } else {
-      const saved = localStorage.getItem("ai-review:wrap-lines");
-      this.wrapLines = saved !== null ? saved === "true" : true;
-    }
-    
+  private _applyPlanData(data: PlanUpdatePayload): void {
     if (this.mode === "diff") {
       this.blocks = parseDiff(data.markdown);
       this.files = this.blocks
@@ -478,14 +554,8 @@ export class RpApp extends LitElement {
     }
 
     if (this.blocks.length > 0) this.focusedLine = this.blocks[0].startLine;
-    if (data.title) {
-      this.planTitle = data.title;
-      document.title = `ai-review: ${data.title}`;
-    }
-    this._applyTheme(data.theme ?? "dark");
-    if (data.aiSummary) {
-      this._aiSummary = data.aiSummary;
-    }
+    this._aiSummary = data.aiSummary ?? "";
+    this._aiAnnotationMap = new Map();
     if (data.aiAnnotations?.length) {
       this._aiAnnotationMap = mapAnnotationsToBlocks(
         data.aiAnnotations,
@@ -493,6 +563,37 @@ export class RpApp extends LitElement {
         this.mode === "diff" ? "diff" : "plan"
       );
     }
+  }
+
+  private async _fetchPlan(): Promise<void> {
+    let res: Response;
+    try {
+      res = await fetch("/plan");
+    } catch (err) {
+      this._loadError = err instanceof Error ? err.message : String(err);
+      return;
+    }
+    if (!res.ok) {
+      this._loadError = `Server returned ${String(res.status)}`;
+      return;
+    }
+    const data = (await res.json()) as { markdown: string; title?: string; theme?: string; mode?: string; wrap?: boolean; aiSummary?: string; aiAnnotations?: AiAnnotation[]; interactive?: boolean };
+    this.mode = data.mode ?? "plan";
+    this._interactive = data.interactive ?? false;
+
+    if (data.wrap !== undefined) {
+      this.wrapLines = data.wrap;
+    } else {
+      const saved = localStorage.getItem("ai-review:wrap-lines");
+      this.wrapLines = saved !== null ? saved === "true" : true;
+    }
+
+    if (data.title) {
+      this.planTitle = data.title;
+      document.title = `ai-review: ${data.title}`;
+    }
+    this._applyTheme(data.theme ?? "dark");
+    this._applyPlanData(data);
     const saved = localStorage.getItem(this._storageKey);
     if (saved) {
       try {
@@ -502,6 +603,8 @@ export class RpApp extends LitElement {
   }
 
   private readonly _onKeydown = (e: KeyboardEvent): void => {
+    if (this.reviewStatus === "waiting") return;
+
     const inInput = e.composedPath().some(el => {
       if (!(el instanceof HTMLElement)) return false;
       const tag = el.tagName.toLowerCase();
@@ -652,21 +755,36 @@ export class RpApp extends LitElement {
     const comments = this.submitSummary.trim()
       ? [...this.comments, { startLine: 0, endLine: 0, text: this.submitSummary.trim() }]
       : this.comments;
+    let status: string | undefined;
     try {
       const res = await fetch("/submit", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ comments, verdict }),
       });
+      const body = await res.json().catch(() => ({})) as { status?: SubmitStatus; error?: string };
       if (!res.ok) {
-        const body = await res.json().catch(() => ({})) as { error?: string };
         this._submitError = body.error ?? `Server returned ${String(res.status)}`;
         return;
       }
+      status = body.status;
     } catch (err) {
       this._submitError = err instanceof Error ? err.message : String(err);
       return;
     }
+
+    this.showSubmitModal = false;
+    this.pendingVerdict = null;
+    this.submitSummary = "";
+    this._submitError = "";
+
+    if (status === "waiting_for_updates") {
+      this.previousRounds = [...this.previousRounds, { comments, aiSummary: this._aiSummary }];
+      this.comments = [];
+      this.reviewStatus = "waiting";
+      return;
+    }
+
     localStorage.removeItem(this._storageKey);
     this._submitted = true;
   };
@@ -722,7 +840,7 @@ export class RpApp extends LitElement {
       <div class="layout-container">
         ${this.mode === "diff" && this.files.length > 0 && !this.sidebarCollapsed
           ? html`
-              <div class="file-nav">
+              <div class="file-nav ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}">
                 <div class="file-nav-header">
                   <h3>Files</h3>
                   <button class="toggle-sidebar" @click=${this._toggleSidebar} title="Collapse sidebar">◂</button>
@@ -751,7 +869,7 @@ export class RpApp extends LitElement {
             `
           : ""}
         <div
-          class="review-content"
+          class="review-content ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}"
           @request-comment=${this._onRequestComment}
           @line-focus=${this._onLineFocus}
           @comment-save=${this._onCommentSave}
@@ -759,6 +877,25 @@ export class RpApp extends LitElement {
           @comment-edit=${this._onCommentEdit}
           @comment-delete=${this._onCommentDelete}
         >
+          ${this.previousRounds.length > 0 ? html`
+            <details class="previous-rounds">
+              <summary>Previous round${this.previousRounds.length === 1 ? "" : "s"} (${String(this.previousRounds.length)})</summary>
+              ${this.previousRounds.map((round, i) => html`
+                <div class="previous-round">
+                  <div class="previous-round-summary">Round ${String(i + 1)}${round.aiSummary ? html`: ${round.aiSummary}` : ""}</div>
+                  ${round.comments.length === 0
+                    ? html`<p>No comments.</p>`
+                    : html`
+                        <ul>
+                          ${round.comments.map((c) => html`
+                            <li>${c.startLine === 0 ? "General" : `Line ${String(c.startLine)}`}: ${c.text}</li>
+                          `)}
+                        </ul>
+                      `}
+                </div>
+              `)}
+            </details>
+          ` : ""}
           ${this._aiSummary ? html`
             <div class="ai-summary" role="note">
               <div class="ai-summary-header">AI Summary</div>
@@ -792,8 +929,14 @@ export class RpApp extends LitElement {
             : this.blocks.map((block) => this._renderBlock(block))}
         </div>
       </div>
-      <div class="toolbar">
+      <div class="toolbar ${this.reviewStatus === 'waiting' ? 'waiting-state' : ''}">
         ${this.planTitle ? html`<span class="title">${this.planTitle}</span>` : ""}
+        <span class="mode-badge ${this._interactive ? "interactive" : ""}"
+          title=${this._interactive
+            ? "Interactive: the agent can revise this file and push updates without restarting"
+            : "Static: this is a one-time snapshot; ends when you submit"}
+          >${this._interactive ? "Interactive" : "Static"}</span
+        >
         <span class="status"
           >${this.comments.length === 0
             ? "No comments yet"
@@ -815,11 +958,23 @@ export class RpApp extends LitElement {
           Wrap lines
         </label>
         <button class="help" @click=${() => { this.showHelp = true; }}>? shortcuts</button>
-        <button class="approve" @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
-        <button class="reject"  @click=${() => { this._openSubmitModal("reject");  }}>Request Changes</button>
+        <button class="approve" ?disabled=${this.reviewStatus === "waiting"} @click=${() => { this._openSubmitModal("approve"); }}>Approve</button>
+        <button class="reject" ?disabled=${this.reviewStatus === "waiting"} @click=${() => { this._openSubmitModal("reject");  }}>Request Changes</button>
       </div>
       ${this.showSubmitModal && this.pendingVerdict ? this._renderSubmitModal() : ""}
       ${this.showHelp ? this._renderHelp() : ""}
+      ${this.reviewStatus === "waiting" ? this._renderWaitingOverlay() : ""}
+    `;
+  }
+
+  private _renderWaitingOverlay() {
+    return html`
+      <div class="waiting-overlay">
+        <div class="waiting-overlay-content">
+          <div class="waiting-spinner"></div>
+          <span>AI is revising the plan…</span>
+        </div>
+      </div>
     `;
   }
 

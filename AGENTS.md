@@ -44,13 +44,18 @@ npm run dev-diff     # dev server for diffs
 `scripts/dev.ts` starts two servers:
 
 - **Plan API** on port 3001 — the same `node:http` server used in production,
-  serving `fixtures/sample-plan.md` (plan mode) or `fixtures/sample-diff.diff` (diff mode) via `GET /plan` and accepting `POST /submit`
-- **Vite** on port 5173 — full HMR, proxies `/plan` and `/submit` to port 3001
+  running in interactive mode, serving `fixtures/sample-plan.md` (plan mode) or
+  `fixtures/sample-diff.diff` (diff mode) via `GET /plan`, streaming updates
+  over `GET /events`, and accepting `POST /submit`
+- **Vite** on port 5173 — full HMR, proxies `/plan`, `/submit`, and `/events`
+  to port 3001
 
 Open **http://localhost:5173** in the browser. Edit any file under `src/ui/` and
-the page hot-reloads instantly without restarting either server.
+the page hot-reloads instantly without restarting either server. Editing
+`fixtures/sample-plan.md` (or its annotations file) re-broadcasts over SSE, so
+you can exercise the interactive loop by hand without going through the CLI.
 
-When you click Done in dev mode, comments are logged to the terminal and the
+When you submit in dev mode, the round is logged to the terminal and the
 servers keep running — reload the page to review again.
 
 **`fixtures/sample-plan.md`** is the canonical test document. Update it if you
@@ -88,8 +93,8 @@ Do not switch to CJS — `open` and `get-port` are ESM-only packages that use
 
 **Express is not used.**
 The server uses raw `node:http` to avoid CJS/ESM bundling conflicts.
-Keep it that way — the three routes (`GET /`, `GET /plan`, `POST /submit`) do
-not justify adding a framework dependency.
+Keep it that way — the four routes (`GET /`, `GET /plan`, `GET /events`,
+`POST /submit`) do not justify adding a framework dependency.
 
 **`marked` is used for rendering.**
 It is called per-block inside `rp-plan-line.ts`. Do not switch to `markdown-it`
@@ -135,17 +140,32 @@ custom events:
 
 ## Server contract
 
-The CLI server exposes exactly three routes. Do not add routes without updating
+The CLI server exposes exactly four routes. Do not add routes without updating
 both the server and the UI fetch calls.
 
 | Route | Method | Description |
 |-------|--------|-------------|
 | `/` | GET | Serves the inlined UI HTML |
-| `/plan` | GET | Returns `{ markdown: string, title?: string, theme?: string, mode?: string }` |
-| `/submit` | POST | Accepts `{ comments: Comment[] }`, resolves the await in CLI |
+| `/plan` | GET | Returns `{ markdown: string, title?: string, theme?: string, mode?: string, interactive?: boolean, aiSummary?: string, aiAnnotations?: AiAnnotation[] }` |
+| `/events` | GET | SSE stream (interactive mode only). Broadcasts `PlanUpdatePayload` (`{ markdown, aiSummary?, aiAnnotations? }`) whenever the CLI's file watcher fires |
+| `/submit` | POST | Accepts `{ comments: Comment[], verdict }` |
 
-After `/submit` is called, the server closes and the CLI exits. The server is
-not designed to handle concurrent requests or multiple submit calls.
+**Non-interactive mode** (default): after `/submit`, the server closes and the
+CLI exits (0 for approve, 1 for reject). Not designed to handle concurrent
+requests or multiple submit calls.
+
+**Interactive mode** (`--interactive`/`-i`): the server stays alive across
+multiple `/submit` rounds. A `reject` verdict responds
+`{ status: "waiting_for_updates" }` and keeps the server running; `approve`
+responds `{ status: "closing" }` and resolves the same way non-interactive
+approve does. The CLI (not the server) owns process lifecycle in this mode —
+`createServer`'s `onReviewRound`/`onSessionEnd` callbacks drive when the CLI
+prints output and exits. The CLI prints a `Watching: <path>` line to stdout on
+startup (a machine-parsed contract line for an integrating AI agent), and
+prints `=== FEEDBACK END ===` after each reject round or
+`=== SESSION CLOSED: client disconnected ===` if the last SSE client (browser
+tab) doesn't reconnect within the 30s grace period. Do not reintroduce the
+"always close after first submit" assumption when touching this code path.
 
 ---
 

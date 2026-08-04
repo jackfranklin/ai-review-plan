@@ -2,8 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { createServer } from "../server/server.js";
-import type { AiAnnotationsFile } from "../server/server.js";
+import type { AiAnnotationsFile, PlanUpdatePayload, ServerHandle, InteractiveServerHandle } from "../server/server.js";
 import { formatOutput } from "./format.js";
+import { debounce } from "./debounce.js";
 import getPort from "get-port";
 import open from "open";
 import { UI_HTML } from "./ui-html.js";
@@ -53,6 +54,12 @@ async function run(): Promise<void> {
       type: "string",
       describe: "Path to JSON file with AI annotations ({ summary?, annotations? })",
     })
+    .option("interactive", {
+      alias: "i",
+      type: "boolean",
+      default: false,
+      describe: "Keep the server running and stream plan updates as an AI agent revises the file",
+    })
     .help()
     .parseAsync();
 
@@ -61,6 +68,14 @@ async function run(): Promise<void> {
   const title = argv.title;
   const theme = argv.theme;
   const wrap = argv.wrap;
+  const interactive = argv.interactive;
+
+  if (interactive && (command === "diff" || !argv.file)) {
+    process.stderr.write(
+      "ai-review: --interactive requires a plan file argument (an AI agent needs a real file to revise); it cannot be combined with stdin input.\n"
+    );
+    process.exit(1);
+  }
 
   let planPath = "";
   let tmpFile: string | null = null;
@@ -109,7 +124,15 @@ async function run(): Promise<void> {
     UI_HTML ??
     `<!doctype html><html><body><p>UI not built — run <code>npm run build</code></p></body></html>`;
 
-  const { server, waitForSubmit } = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  let handle: ServerHandle;
+  let interactiveHandle: InteractiveServerHandle | undefined;
+  if (interactive) {
+    interactiveHandle = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData, { interactive: true });
+    handle = interactiveHandle;
+  } else {
+    handle = createServer(planPath, uiHtml, title, theme, mode, wrap, aiAnnotationsData);
+  }
+  const { server, waitForSubmit } = handle;
   server.listen(port);
 
   const url = `http://localhost:${String(port)}`;
@@ -119,6 +142,48 @@ async function run(): Promise<void> {
     await open(url);
   } catch {
     process.stderr.write(`Could not open browser automatically. Visit: ${url}\n`);
+  }
+
+  if (interactiveHandle) {
+    process.stdout.write(`Watching: ${planPath}\n`);
+
+    const broadcastLatest = debounce(() => {
+      const payload: PlanUpdatePayload = { markdown: fs.readFileSync(planPath, "utf-8") };
+      if (annotationsFile && fs.existsSync(annotationsFile)) {
+        try {
+          const data = JSON.parse(fs.readFileSync(annotationsFile, "utf-8")) as AiAnnotationsFile;
+          if (data.summary) payload.aiSummary = data.summary;
+          if (data.annotations?.length) payload.aiAnnotations = data.annotations;
+        } catch {
+          // Malformed annotations mid-write; skip this broadcast and wait for the next change.
+        }
+      }
+      interactiveHandle.broadcastUpdate(payload);
+    }, 200);
+
+    fs.watch(planPath, broadcastLatest);
+    if (annotationsFile) fs.watch(annotationsFile, broadcastLatest);
+
+    interactiveHandle.onReviewRound((result) => {
+      const currentContent = fs.readFileSync(planPath, "utf-8");
+      process.stdout.write(formatOutput(currentContent, result.comments, result.verdict, argv["include-plan"]));
+      if (result.verdict === "approve") {
+        server.close();
+        process.exit(0);
+      }
+      process.stdout.write("=== FEEDBACK END ===\n");
+      process.stdout.write(
+        `\n[ACTION REQUIRED] User requested changes. Read the comments above, modify the plan file in-place at: ${planPath}, and save the file. The changes will be automatically detected and broadcast back to the user's browser. Do NOT wait for the process to exit or for a user chat prompt.\n`
+      );
+    });
+
+    interactiveHandle.onSessionEnd(() => {
+      process.stdout.write("=== SESSION CLOSED: client disconnected ===\n");
+      server.close();
+      process.exit(1);
+    });
+
+    return;
   }
 
   const planContent = fs.readFileSync(planPath, "utf-8");

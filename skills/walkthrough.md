@@ -9,8 +9,9 @@ description: >
 
 You are walking a developer through code you have written, so they can
 understand it rather than just review it. The output is a structured explanation
-piped to the ai-review UI; the developer reads at their own pace, leaves
-questions inline, and you answer them when they click Done.
+piped to the ai-review UI, run in **interactive mode**: the session stays open
+while you answer questions and revise the document in place, rather than
+restarting the CLI for each pass.
 
 ## Steps
 
@@ -29,9 +30,9 @@ If the user specified a scope (a branch, a commit, a set of files), use it.
 ### 2. Generate the walkthrough document
 
 Analyse the diff and write a markdown document to `/tmp/walkthrough-<timestamp>.md`.
-Structure it as a sequence of logical steps — not one step per file, but one step
-per *concept* or *concern*. A single step might touch several files; a large file
-change might warrant two steps. Aim for 3–8 steps total.
+Structure it as a sequence of logical steps — not one
+step per file, but one step per *concept* or *concern*. A single step might touch several
+files; a large file change might warrant two steps. Aim for 3–8 steps total.
 
 Use this template:
 
@@ -84,38 +85,50 @@ Rules for writing the document:
 - Keep each step focused enough to read in under two minutes.
 - Use real file paths and line numbers from the actual diff.
 
-### 3. Open the review UI
+### 3. Open the review UI in the background
+
+Start the CLI **in the background** with `--interactive`, so the session can stay
+open while you answer questions and revise the document:
 
 ```bash
 ai-review plan \
   --title "Walkthrough: <feature name>" \
   --theme <dark|light> \
-  /tmp/walkthrough-<timestamp>.md
+  --interactive \
+  .jai/tmp/walkthrough-<timestamp>.md
 ```
 
 Use `--theme light` unless the user has expressed a preference for dark mode.
 
-### 4. Read the annotated output
+### 4. Wait for it to come up
 
-Wait for the CLI to exit. It blocks until the developer clicks Done.
+Wait for stdout to print `Watching: <path>` — the process stays running after this;
+do not wait for it to exit.
 
-- **No output** — the developer had no questions. Confirm they're happy to proceed
-  and delete the temp file.
-- **Annotated output** — the developer left questions or concerns. Read each one
-  and respond directly in the chat: answer the question, correct any
-  misunderstanding, or acknowledge where the code could be clearer. Do not ask
-  the developer to re-read the diff themselves.
+### 5. Respond to each round
 
-### 5. Offer a follow-up pass
+Keep monitoring the background process's stdout. Each round ends one of three ways:
 
-After answering all questions, ask: *"Would you like another walkthrough pass
-with the updated explanation, or are you happy to move on?"* If they want
-another pass, revise the document to incorporate the answers inline (so future
-readers don't need the Q&A thread) and repeat from step 3.
+- **`=== FEEDBACK END ===`** / **`[ACTION REQUIRED]`** — the developer left questions and clicked **Request
+  Changes**. Read the comments from the `## Review: CHANGES REQUESTED` output since
+  the last marker. **You must act immediately and autonomously. Do not wait for a user chat prompt or command termination.** Answer each question directly in the chat, then revise the walkthrough
+  document **in place at its original path** to incorporate the answers inline (so
+  future readers don't need the Q&A thread) — this is picked up automatically and
+  pushed to the open browser tab, no restart needed. Go back to waiting on stdout.
+- **The process exits with code 0** — the developer clicked **Approve**, meaning
+  they had no more questions (or their last ones are answered). This ends the
+  session — go to step 6.
+- **`=== SESSION CLOSED: client disconnected ===`** (process exits non-zero) — the
+  browser tab didn't reconnect within 30 seconds. Tell the developer the session
+  closed and ask whether to re-open it (re-run from step 3 against the same file)
+  or stop here.
+
+  > [!IMPORTANT]
+  > When the developer clicks **Request Changes**, the CLI does **not** exit. It prints `=== FEEDBACK END ===` and a `[ACTION REQUIRED]` block, then continues running. You must **not** wait for a user chat prompt or command termination. You must immediately read the printed feedback, perform the required document/file updates, save the file, and resume monitoring stdout.
 
 ### 6. Clean up
 
-Delete the temp file once the developer confirms they're done.
+Once the session has ended, delete the temp file.
 
 ## Notes
 
@@ -130,3 +143,4 @@ Delete the temp file once the developer confirms they're done.
 - Line numbers should match the post-change state of the file, not the diff
   hunk headers, so the developer can open the file and land on the right line.
 - **Diagrams**: Use Mermaid diagrams (e.g. `sequenceDiagram`, `flowchart TD`, `stateDiagram-v2` in a fenced code block with language `mermaid`) inside your steps when explaining the sequence of events, data structures, or code architecture introduced by the change.
+</content>
