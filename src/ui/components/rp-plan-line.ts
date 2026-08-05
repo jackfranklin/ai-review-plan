@@ -135,6 +135,8 @@ export class RpPlanLine extends LitElement {
   @property({ type: Boolean }) commentOpen = false;
   @property({ type: Boolean }) isDiff = false;
   @property({ type: String }) commentText = "";
+  @property({ type: String }) appendQuote = "";
+  @property({ type: Number }) appendQuoteSeq = 0;
   @property({ type: String }) theme = "dark";
 
   private _dispatchRequestComment() {
@@ -233,6 +235,8 @@ export class RpPlanLine extends LitElement {
             .startLine=${this.block.startLine}
             .endLine=${this.block.endLine}
             .text=${this.commentText}
+            .appendQuote=${this.appendQuote}
+            .appendQuoteSeq=${this.appendQuoteSeq}
           ></rp-comment-box>`
         : ""}
       ${this.comments.map(

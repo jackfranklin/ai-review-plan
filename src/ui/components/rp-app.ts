@@ -462,6 +462,8 @@ export class RpApp extends LitElement {
   @state() private mode = "plan";
   @state() private files: Array<{ name: string; isDeleted: boolean }> = [];
   @state() private editingCommentText = "";
+  @state() private appendQuote = "";
+  @state() private appendQuoteSeq = 0;
   @state() private sidebarCollapsed = false;
   @state() private showSubmitModal = false;
   @state() private pendingVerdict: "approve" | "reject" | null = null;
@@ -630,10 +632,30 @@ export class RpApp extends LitElement {
       case "ArrowUp":
         this._moveFocus(-1);
         break;
-      case "c":
+      case "c": {
         e.preventDefault();
-        this.openCommentLine = this.focusedLine;
+        const selectedText = window.getSelection()?.toString().trim() ?? "";
+        const block = this.blocks.find(
+          (b) => this.focusedLine >= b.startLine && this.focusedLine <= b.endLine
+        );
+        const blockOpen =
+          block !== undefined &&
+          this.openCommentLine !== null &&
+          this.openCommentLine >= block.startLine &&
+          this.openCommentLine <= block.endLine;
+        const quote = selectedText ? `> ${selectedText.replace(/\n/g, "\n> ")}\n\n` : "";
+        if (blockOpen) {
+          if (quote) {
+            this.appendQuote = quote;
+            this.appendQuoteSeq += 1;
+          }
+        } else {
+          this.openCommentLine = this.focusedLine;
+          this.editingCommentText = quote;
+        }
+        window.getSelection()?.removeAllRanges();
         break;
+      }
       case "n":
         this._jumpToComment(1);
         break;
@@ -818,6 +840,8 @@ export class RpApp extends LitElement {
           this.focusedLine <= block.endLine}
         ?commentOpen=${isOpen}
         .commentText=${isOpen ? this.editingCommentText : ""}
+        .appendQuote=${this.appendQuote}
+        .appendQuoteSeq=${this.appendQuoteSeq}
         .isDiff=${this.mode === "diff"}
         .theme=${this.theme}
         ?wrap-lines=${this.wrapLines}
