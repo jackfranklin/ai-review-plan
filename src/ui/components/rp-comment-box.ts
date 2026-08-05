@@ -56,12 +56,33 @@ export class RpCommentBox extends LitElement {
   @property({ type: Number }) startLine = 0;
   @property({ type: Number }) endLine = 0;
   @property({ type: String }) text = "";
+  @property({ type: String }) appendQuote = "";
+  @property({ type: Number }) appendQuoteSeq = 0;
 
   @state() private _text = "";
+  private _lastAppendSeq = 0;
 
   override willUpdate(changedProperties: Map<PropertyKey, unknown>) {
     if (changedProperties.has("text")) {
       this._text = this.text;
+      this._lastAppendSeq = this.appendQuoteSeq;
+    } else if (
+      changedProperties.has("appendQuoteSeq") &&
+      this.appendQuoteSeq !== this._lastAppendSeq
+    ) {
+      this._text = this._text ? `${this._text}\n${this.appendQuote}` : this.appendQuote;
+      this._lastAppendSeq = this.appendQuoteSeq;
+    }
+  }
+
+  override updated(changedProperties: Map<PropertyKey, unknown>) {
+    if (changedProperties.has("appendQuoteSeq") && !changedProperties.has("text")) {
+      const textarea = this.shadowRoot?.querySelector("textarea");
+      if (textarea) {
+        textarea.focus();
+        textarea.setSelectionRange(textarea.value.length, textarea.value.length);
+        textarea.scrollTop = textarea.scrollHeight;
+      }
     }
   }
 
